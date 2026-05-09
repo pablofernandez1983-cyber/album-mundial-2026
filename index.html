@@ -579,7 +579,7 @@
       <img src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png" height="48" style="flex-shrink:0;width:auto;object-fit:contain;filter:drop-shadow(0 1px 4px rgba(0,0,0,.5))">
       <div>
         <div class="app-title">MUNDIAL 2026</div>
-        <div class="app-subtitle">Panini · Mi Colección <span style="opacity:0.5;font-size:9px;letter-spacing:0">v3.0</span></div>
+        <div class="app-subtitle">Panini · Mi Colección <span style="opacity:0.5;font-size:9px;letter-spacing:0">v3.1</span></div>
       </div>
     </div>
     <div class="stats-pill" id="header-stats">0 / 0</div>
@@ -2468,11 +2468,6 @@ function printReport(sortAlpha) {
     sorted.forEach(k => {
       const block = teamBlock(k);
       if (!block) return;
-      const letter = ALBUM[k].label[0].toUpperCase();
-      if (letter !== lastL) {
-        col += `<div class="gh" style="background:#555">— ${letter} —</div>`;
-        lastL = letter;
-      }
       col += block;
     });
     blocks = col;
