@@ -2450,111 +2450,84 @@ function printReport(sortAlpha) {
   const groupOf = {}, colorOf = {};
   teamKeys.forEach((k,i) => { groupOf[k]=GROUPS[Math.floor(i/4)]; colorOf[k]=GC[Math.floor(i/4)]; });
 
-  function owned(code) { return !!collection[code]?.owned; }
-
-  function teamRow(key, glabel, gc, shade) {
-    const t = ALBUM[key];
-    const miss = t.stickers.filter(s => !owned(s.code)).length;
-    const cells = t.stickers.map(s => {
-      const n = s.code.replace(key,'');
-      return owned(s.code)
-        ? `<td class="sc o">${n}</td>`
-        : `<td class="sc m">${n}</td>`;
-    }).join('');
-    return `<tr style="background:${shade}">
-      <td class="gc" style="background:${gc}">${glabel}</td>
-      <td class="fl">${FLAGS[key]||''}</td>
-      <td class="tn">${t.label}</td>
-      ${cells}
-      <td class="mc" style="color:${miss?'#C8102E':'#00843D'}">${miss||'✓'}</td>
-    </tr>`;
+  function missingNums(key, prefix) {
+    return ALBUM[key].stickers
+      .filter(s => !collection[s.code]?.owned)
+      .map(s => s.code.replace(prefix||key,''));
   }
 
-  function specialCells(sectionKey, prefix, count) {
-    const stickers = ALBUM[sectionKey]?.stickers || [];
-    const miss = stickers.filter(s => !owned(s.code)).length;
-    const cells = stickers.map(s => {
-      const n = s.code.replace(prefix,'');
-      return owned(s.code) ? `<td class="sc o">${n}</td>` : `<td class="sc m">${n}</td>`;
-    }).join('');
-    // pad to `count` if needed
-    const pad = count - stickers.length;
-    const padCells = pad > 0 ? `<td colspan="${pad}" style="border:none"></td>` : '';
-    return `<tr><td class="tn" colspan="3" style="font-weight:bold;font-size:5.5pt;text-align:left;padding:1pt 3pt">${prefix === 'FWC' ? 'FWC — Introducción' : prefix === 'CC' ? 'CC — Coca-Cola' : 'Panini'}</td>${cells}${padCells}<td class="mc" style="color:${miss?'#C8102E':'#00843D'}">${miss||'✓'}</td></tr>`;
+  let blocks = '';
+
+  function teamLine(key, gc) {
+    const nums = missingNums(key);
+    if (!nums.length) return '';
+    return `<div class="tl"><span class="fl">${FLAGS[key]||''}</span><span class="tc">${ALBUM[key].label}:</span> <span class="nums">${nums.join(', ')}</span></div>`;
   }
 
-  let rows = '';
   if (sortAlpha) {
     const sorted = [...teamKeys].sort((a,b)=>ALBUM[a].label.localeCompare(ALBUM[b].label,'es'));
-    let lastLetter = '';
-    sorted.forEach((k,i) => {
+    let lastL = '';
+    let col = '';
+    sorted.forEach(k => {
+      const line = teamLine(k, colorOf[k]);
+      if (!line) return;
       const letter = ALBUM[k].label[0].toUpperCase();
-      if (letter !== lastLetter) {
-        rows += `<tr><td colspan="24" style="background:#f0f0f0;font-weight:900;font-size:6pt;padding:1.5pt 4pt;color:#333;letter-spacing:1px">${letter}</td></tr>`;
-        lastLetter = letter;
+      if (letter !== lastL) {
+        col += `<div class="gh" style="background:#555">— ${letter} —</div>`;
+        lastL = letter;
       }
-      rows += teamRow(k, groupOf[k], colorOf[k], i%2===0?'#fff':'#fafafa');
+      col += line;
     });
+    blocks = col;
   } else {
     teamKeys.forEach((k,i) => {
       if (i%4===0) {
-        const g = GROUPS[i/4], gc = GC[i/4];
-        rows += `<tr><td colspan="24" class="gh" style="background:${gc}">GRUPO ${g}</td></tr>`;
+        const g=GROUPS[i/4], gc=GC[i/4];
+        blocks += `<div class="gh" style="background:${gc}">GRUPO ${g}</div>`;
       }
-      rows += teamRow(k, groupOf[k], colorOf[k], i%2===0?'#fff':'#fafafa');
+      blocks += teamLine(k, colorOf[k]);
     });
   }
+
+  // Special sections
+  function specialBlock(key, prefix, label, color) {
+    const nums = missingNums(key, prefix);
+    if (!nums.length) return '';
+    return `<div class="gh" style="background:${color}">${label}</div>
+    <div class="tl"><span class="tc" style="min-width:0;margin-right:3pt">${prefix}:</span><span class="nums">${nums.join(', ')}</span></div>`;
+  }
+
+  blocks += specialBlock('INTRO','FWC','Introducción (FWC)','#555');
+  blocks += specialBlock('CC','CC','Coca-Cola (CC)','#E8192C');
+  blocks += specialBlock('PANINI','PANINI','Panini','#003DA5');
 
   const ow = ownedCount(), tot = totalStickers();
   const pct = tot ? Math.round(ow/tot*100) : 0;
   const fecha = new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
-  const numHdrs = Array.from({length:20},(_,i)=>`<td class="nh">${i+1}</td>`).join('');
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<title>Control Figuritas Mundial 2026</title>
+<title>Figuritas Faltantes — Mundial 2026</title>
 <style>
-@page{size:A4 portrait;margin:5mm}
+@page{size:A4 portrait;margin:7mm}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,Helvetica,sans-serif;font-size:6pt;color:#111;background:#fff;padding:1mm 2mm}
-.hdr{text-align:center;padding:2mm 0 1.5mm;border-bottom:2pt solid #C8102E;margin-bottom:1.5mm;display:flex;align-items:center;justify-content:center;gap:8pt}
-.t1{font-family:Impact,'Arial Black',sans-serif;font-size:12pt;font-weight:900;color:#1a7c3e;text-transform:uppercase;letter-spacing:2px;line-height:1}
-.t2{font-family:Impact,'Arial Black',sans-serif;font-size:16pt;font-weight:900;color:#E8C800;text-transform:uppercase;letter-spacing:2px;line-height:1;-webkit-text-stroke:.6pt #aa8800}
-.meta{font-size:5pt;color:#666;margin-top:1mm}
-table{width:100%;border-collapse:collapse;table-layout:fixed}
-.gh{color:#fff;font-weight:900;font-size:6pt;text-transform:uppercase;padding:1.5pt 3pt;letter-spacing:1px}
-.gc{width:9pt;text-align:center;color:#fff;font-weight:900;font-size:5.5pt;padding:0;vertical-align:middle}
-.fl{width:9pt;text-align:center;font-size:7.5pt;padding:0;vertical-align:middle;line-height:1}
-.tn{width:48pt;font-size:5.5pt;font-weight:bold;padding:0 2pt;overflow:hidden;white-space:nowrap;vertical-align:middle}
-.sc{text-align:center;border:.3pt solid #ddd;font-size:5pt;height:12pt;vertical-align:middle;padding:0}
-.o{background:#e8f5e9;color:#bbb}
-.m{background:#C8102E;color:#fff;font-weight:bold;border-color:#a00}
-.mc{width:11pt;text-align:center;font-weight:bold;font-size:5.5pt;border-left:.5pt solid #ccc;vertical-align:middle}
-.nh{text-align:center;font-size:4.5pt;color:#999;border:.2pt solid #eee;height:9pt;vertical-align:middle;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;font-size:7pt;color:#111;background:#fff}
+.hdr{text-align:center;padding-bottom:2mm;border-bottom:2pt solid #C8102E;margin-bottom:2mm}
+.t1{font-family:Impact,'Arial Black',sans-serif;font-size:11pt;font-weight:900;color:#1a7c3e;text-transform:uppercase;letter-spacing:2px;line-height:1.1}
+.t2{font-family:Impact,'Arial Black',sans-serif;font-size:15pt;font-weight:900;color:#E8C800;text-transform:uppercase;letter-spacing:2px;line-height:1.1;-webkit-text-stroke:.5pt #9a7000}
+.meta{font-size:5.5pt;color:#777;margin-top:1mm}
+.cols{column-count:3;column-gap:4mm}
+.gh{color:#fff;font-weight:900;font-size:6pt;text-transform:uppercase;padding:1.5pt 4pt;letter-spacing:1px;margin:3pt 0 1pt;break-inside:avoid;page-break-inside:avoid}
+.tl{break-inside:avoid;page-break-inside:avoid;line-height:1.5;display:flex;align-items:baseline;gap:2pt}
+.fl{font-size:8pt;line-height:1;flex-shrink:0}
+.tc{font-weight:bold;font-size:6pt;white-space:nowrap;flex-shrink:0}
+.nums{font-size:6pt;color:#C8102E;font-weight:bold}
 </style></head><body>
 <div class="hdr">
-  <div>
-    <div class="t1">Tabla de Control de Figuritas</div>
-    <div class="t2">Copa del Mundo 2026</div>
-    <div class="meta">Panini · ${ow}/${tot} completadas · ${pct}% · Faltan ${tot-ow} · ${fecha}${sortAlpha?' · A-Z':' · Por Grupo'}</div>
-  </div>
+  <div class="t1">Tabla de Control de Figuritas</div>
+  <div class="t2">Copa del Mundo 2026</div>
+  <div class="meta">Panini · ${ow}/${tot} completadas · ${pct}% · Faltan ${tot-ow} · ${fecha}${sortAlpha?' · A-Z':' · Por Grupo'}</div>
 </div>
-<table>
-<thead><tr>
-  <td class="gc" style="background:#555"></td>
-  <td class="fl"></td>
-  <td class="tn" style="font-size:4.5pt;color:#888">EQUIPO</td>
-  ${numHdrs}
-  <td class="mc" style="font-size:4.5pt;color:#888">❌</td>
-</tr></thead>
-<tbody>
-${rows}
-<tr><td colspan="24" style="height:3pt;background:#f0f0f0;border-top:1pt solid #ddd"></td></tr>
-${specialCells('INTRO','FWC',20)}
-${specialCells('CC','CC',20)}
-${specialCells('PANINI','PANINI',20)}
-</tbody>
-</table>
-<div style="margin-top:2mm;font-size:4.5pt;color:#bbb;text-align:center">⬛ Falta · ✓ Tengo</div>
+<div class="cols">${blocks}</div>
 <script>window.onload=()=>{window.print()}<\/script>
 </body></html>`;
 
