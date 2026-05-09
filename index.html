@@ -579,7 +579,7 @@
       <img src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png" height="48" style="flex-shrink:0;width:auto;object-fit:contain;filter:drop-shadow(0 1px 4px rgba(0,0,0,.5))">
       <div>
         <div class="app-title">MUNDIAL 2026</div>
-        <div class="app-subtitle">Panini · Mi Colección <span style="opacity:0.5;font-size:9px;letter-spacing:0">v3.1</span></div>
+        <div class="app-subtitle">Panini · Mi Colección <span style="opacity:0.5;font-size:9px;letter-spacing:0">v3.2</span></div>
       </div>
     </div>
     <div class="stats-pill" id="header-stats">0 / 0</div>
@@ -2458,7 +2458,8 @@ function printReport(sortAlpha) {
     const nums = missingNums(key);
     if (!nums.length) return '';
     const boxes = nums.map(n => `<span class="nb">${n}</span>`).join('');
-    return `<div class="tb"><span class="tf">${FLAGS[key]||''}</span><span class="tn">${ALBUM[key].label}</span>${boxes}</div>`;
+    const label = ALBUM[key].label.replace('Bosnia y Herzegovina','Bosnia').replace('Estados Unidos','EE.UU.');
+    return `<div class="tb"><span class="tf">${FLAGS[key]||''}</span><span class="tn">${label}</span>${boxes}</div>`;
   }
 
   if (sortAlpha) {
@@ -2514,7 +2515,7 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:7pt;color:#111;background:
 .tb{display:flex;flex-wrap:wrap;align-items:center;gap:1.5pt;margin-bottom:2pt;break-inside:avoid;page-break-inside:avoid}
 .tf{font-size:8pt;line-height:1;flex-shrink:0}
 .tn{font-weight:bold;font-size:7pt;flex-shrink:0;margin-right:1.5pt}
-.nb{display:inline-flex;align-items:center;justify-content:center;width:8pt;height:8pt;border:0.8pt solid #333;border-radius:1pt;font-size:5.5pt;font-weight:normal;color:#333}
+.nb{display:inline-flex;align-items:center;justify-content:center;width:9pt;height:9pt;border:0.8pt solid #333;border-radius:1pt;font-size:6pt;font-weight:bold;color:#222}
 </style></head><body>
 <div class="hdr">
   <img class="hdr-logo" src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png">
