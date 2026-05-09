@@ -576,14 +576,10 @@
 <header>
   <div class="header-top">
     <div class="header-brand">
-      <svg width="36" height="36" viewBox="0 0 64 64" fill="none" style="flex-shrink:0;">
-        <circle cx="32" cy="32" r="31" fill="#C8102E"/>
-        <circle cx="32" cy="32" r="27" fill="none" stroke="#FFB800" stroke-width="3"/>
-        <text x="32" y="41" font-family="Arial Black,Impact,sans-serif" font-size="20" font-weight="900" text-anchor="middle" fill="#FFFFFF">26</text>
-      </svg>
+      <img src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png" height="48" style="flex-shrink:0;width:auto;object-fit:contain;filter:drop-shadow(0 1px 4px rgba(0,0,0,.5))">
       <div>
         <div class="app-title">MUNDIAL 2026</div>
-        <div class="app-subtitle">Panini · Mi Colección <span style="opacity:0.5;font-size:9px;letter-spacing:0">v2.7</span></div>
+        <div class="app-subtitle">Panini · Mi Colección <span style="opacity:0.5;font-size:9px;letter-spacing:0">v2.8</span></div>
       </div>
     </div>
     <div class="stats-pill" id="header-stats">0 / 0</div>
@@ -2512,9 +2508,11 @@ function printReport(sortAlpha) {
 @page{size:A4 portrait;margin:6mm}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,Helvetica,sans-serif;font-size:7pt;color:#111;background:#fff}
-.hdr{text-align:center;padding-bottom:1.5mm;border-bottom:2pt solid #C8102E;margin-bottom:2mm}
-.t1{font-family:Impact,'Arial Black',sans-serif;font-size:10pt;font-weight:900;color:#1a7c3e;text-transform:uppercase;letter-spacing:2px;line-height:1.1}
-.t2{font-family:Impact,'Arial Black',sans-serif;font-size:13pt;font-weight:900;color:#E8C800;text-transform:uppercase;letter-spacing:2px;line-height:1.1;-webkit-text-stroke:.5pt #9a7000}
+.hdr{display:flex;align-items:center;gap:4mm;padding-bottom:1.5mm;border-bottom:2pt solid #C8102E;margin-bottom:2mm}
+.hdr-logo{height:18mm;width:auto;flex-shrink:0}
+.hdr-txt{flex:1}
+.t1{font-family:Impact,'Arial Black',sans-serif;font-size:9pt;font-weight:900;color:#1a7c3e;text-transform:uppercase;letter-spacing:2px;line-height:1.1}
+.t2{font-family:Impact,'Arial Black',sans-serif;font-size:12pt;font-weight:900;color:#C8A900;text-transform:uppercase;letter-spacing:1.5px;line-height:1.2}
 .meta{font-size:5.5pt;color:#777;margin-top:1mm}
 .cols{column-count:3;column-gap:3.5mm}
 .gh{color:#fff;font-weight:900;font-size:6.5pt;text-transform:uppercase;padding:1.5pt 4pt;letter-spacing:1px;margin:3pt 0 1.5pt;break-inside:avoid;page-break-inside:avoid}
@@ -2527,9 +2525,12 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:7pt;color:#111;background:
 .nb{display:inline-flex;align-items:center;justify-content:center;width:9pt;height:9pt;border:1pt solid #C8102E;border-radius:1.5pt;font-size:6pt;font-weight:bold;color:#C8102E}
 </style></head><body>
 <div class="hdr">
-  <div class="t1">Tabla de Control de Figuritas</div>
-  <div class="t2">Copa del Mundo 2026</div>
-  <div class="meta">Panini · ${ow}/${tot} completadas · ${pct}% · Faltan ${tot-ow} · ${fecha}${sortAlpha?' · A-Z':' · Por Grupo'}</div>
+  <img class="hdr-logo" src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png">
+  <div class="hdr-txt">
+    <div class="t1">Figuritas Faltantes · Álbum Panini</div>
+    <div class="t2">FIFA World Cup 2026™</div>
+    <div class="meta">${ow}/${tot} completadas · ${pct}% · Faltan ${tot-ow} · ${fecha}${sortAlpha?' · A-Z':' · Por Grupo'}</div>
+  </div>
 </div>
 <div class="cols">${blocks}</div>
 <script>window.onload=()=>{window.print()}<\/script>
