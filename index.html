@@ -2444,86 +2444,117 @@ function renderMissing() {
 
 function printReport(sortAlpha) {
   const GROUPS = 'ABCDEFGHIJKL'.split('');
+  const GC = ['#C8102E','#003DA5','#E8630A','#00843D','#7B2D8B','#00A3E0','#D4006C','#1A3A5C','#C49A00','#006B3F','#9B1D20','#5B2C6F'];
+  const FLAGS = {MEX:'🇲🇽',RSA:'🇿🇦',KOR:'🇰🇷',CZE:'🇨🇿',CAN:'🇨🇦',BIH:'🇧🇦',QAT:'🇶🇦',SUI:'🇨🇭',BRA:'🇧🇷',MAR:'🇲🇦',HAI:'🇭🇹',SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',USA:'🇺🇸',PAR:'🇵🇾',AUS:'🇦🇺',TUR:'🇹🇷',GER:'🇩🇪',CUW:'🇨🇼',CIV:'🇨🇮',ECU:'🇪🇨',NED:'🇳🇱',JPN:'🇯🇵',SWE:'🇸🇪',TUN:'🇹🇳',BEL:'🇧🇪',EGY:'🇪🇬',IRN:'🇮🇷',NZL:'🇳🇿',ESP:'🇪🇸',CPV:'🇨🇻',KSA:'🇸🇦',URU:'🇺🇾',FRA:'🇫🇷',SEN:'🇸🇳',IRQ:'🇮🇶',NOR:'🇳🇴',ARG:'🇦🇷',ALG:'🇩🇿',AUT:'🇦🇹',JOR:'🇯🇴',POR:'🇵🇹',COD:'🇨🇩',UZB:'🇺🇿',COL:'🇨🇴',ENG:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',CRO:'🇭🇷',GHA:'🇬🇭',PAN:'🇵🇦'};
   const teamKeys = Object.keys(ALBUM).filter(k => !['INTRO','CC','PANINI'].includes(k));
+  const groupOf = {}, colorOf = {};
+  teamKeys.forEach((k,i) => { groupOf[k]=GROUPS[Math.floor(i/4)]; colorOf[k]=GC[Math.floor(i/4)]; });
 
-  // Build missing numbers per section
-  function missingNums(teamKey) {
-    return ALBUM[teamKey].stickers
-      .filter(s => !collection[s.code]?.owned)
-      .map(s => s.code.replace(teamKey === 'INTRO' ? 'FWC' : teamKey, ''));
-  }
+  function owned(code) { return !!collection[code]?.owned; }
 
-  // Build rows for a list of [teamKey, label, nums]
-  function buildRows(entries) {
-    return entries.map(([key, lbl, nums]) => {
-      if (!nums.length) return '';
-      return `<div class="tr"><span class="tc">${key}</span><span class="tl">${lbl}:</span> ${nums.join(', ')}</div>`;
+  function teamRow(key, glabel, gc, shade) {
+    const t = ALBUM[key];
+    const miss = t.stickers.filter(s => !owned(s.code)).length;
+    const cells = t.stickers.map(s => {
+      const n = s.code.replace(key,'');
+      return owned(s.code)
+        ? `<td class="sc o">${n}</td>`
+        : `<td class="sc m">${n}</td>`;
     }).join('');
+    return `<tr style="background:${shade}">
+      <td class="gc" style="background:${gc}">${glabel}</td>
+      <td class="fl">${FLAGS[key]||''}</td>
+      <td class="tn">${t.label}</td>
+      ${cells}
+      <td class="mc" style="color:${miss?'#C8102E':'#00843D'}">${miss||'✓'}</td>
+    </tr>`;
   }
 
-  let content = '';
-
-  // INTRO
-  const introNums = missingNums('INTRO');
-  if (introNums.length) {
-    content += `<div class="gh">Introducción (FWC)</div>`;
-    content += `<div class="tr"><span class="tc">FWC</span><span class="tl">Introducción:</span> ${introNums.join(', ')}</div>`;
+  function specialCells(sectionKey, prefix, count) {
+    const stickers = ALBUM[sectionKey]?.stickers || [];
+    const miss = stickers.filter(s => !owned(s.code)).length;
+    const cells = stickers.map(s => {
+      const n = s.code.replace(prefix,'');
+      return owned(s.code) ? `<td class="sc o">${n}</td>` : `<td class="sc m">${n}</td>`;
+    }).join('');
+    // pad to `count` if needed
+    const pad = count - stickers.length;
+    const padCells = pad > 0 ? `<td colspan="${pad}" style="border:none"></td>` : '';
+    return `<tr><td class="tn" colspan="3" style="font-weight:bold;font-size:5.5pt;text-align:left;padding:1pt 3pt">${prefix === 'FWC' ? 'FWC — Introducción' : prefix === 'CC' ? 'CC — Coca-Cola' : 'Panini'}</td>${cells}${padCells}<td class="mc" style="color:${miss?'#C8102E':'#00843D'}">${miss||'✓'}</td></tr>`;
   }
 
-  // Teams
+  let rows = '';
   if (sortAlpha) {
-    const sorted = [...teamKeys].sort((a, b) =>
-      ALBUM[a].label.localeCompare(ALBUM[b].label, 'es'));
-    content += `<div class="gh">Equipos (A-Z)</div>`;
-    content += buildRows(sorted.map(k => [k, ALBUM[k].label, missingNums(k)]));
+    const sorted = [...teamKeys].sort((a,b)=>ALBUM[a].label.localeCompare(ALBUM[b].label,'es'));
+    let lastLetter = '';
+    sorted.forEach((k,i) => {
+      const letter = ALBUM[k].label[0].toUpperCase();
+      if (letter !== lastLetter) {
+        rows += `<tr><td colspan="24" style="background:#f0f0f0;font-weight:900;font-size:6pt;padding:1.5pt 4pt;color:#333;letter-spacing:1px">${letter}</td></tr>`;
+        lastLetter = letter;
+      }
+      rows += teamRow(k, groupOf[k], colorOf[k], i%2===0?'#fff':'#fafafa');
+    });
   } else {
-    teamKeys.forEach((key, i) => {
-      if (i % 4 === 0) {
-        content += `<div class="gh">Grupo ${GROUPS[i / 4]}</div>`;
+    teamKeys.forEach((k,i) => {
+      if (i%4===0) {
+        const g = GROUPS[i/4], gc = GC[i/4];
+        rows += `<tr><td colspan="24" class="gh" style="background:${gc}">GRUPO ${g}</td></tr>`;
       }
-      const nums = missingNums(key);
-      if (nums.length) {
-        content += `<div class="tr"><span class="tc">${key}</span><span class="tl">${ALBUM[key].label}:</span> ${nums.join(', ')}</div>`;
-      }
+      rows += teamRow(k, groupOf[k], colorOf[k], i%2===0?'#fff':'#fafafa');
     });
   }
 
-  // CC
-  const ccNums = ALBUM['CC'].stickers.filter(s => !collection[s.code]?.owned).map(s => s.code.replace('CC',''));
-  if (ccNums.length) {
-    content += `<div class="gh">Coca-Cola (CC)</div>`;
-    content += `<div class="tr"><span class="tc">CC</span><span class="tl">Coca-Cola:</span> ${ccNums.join(', ')}</div>`;
-  }
-  const paniniMissing = ALBUM['PANINI'].stickers.filter(s => !collection[s.code]?.owned);
-  if (paniniMissing.length) {
-    content += `<div class="gh">Panini</div>`;
-    content += `<div class="tr"><span class="tc">00</span><span class="tl">Panini:</span> 00</div>`;
-  }
-
-  const owned = ownedCount(), total = totalStickers();
-  const pct = total ? Math.round(owned / total * 100) : 0;
-  const fecha = new Date().toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric'});
-  const titulo = sortAlpha ? 'FIGURITAS FALTANTES — A-Z' : 'FIGURITAS FALTANTES — POR GRUPO';
+  const ow = ownedCount(), tot = totalStickers();
+  const pct = tot ? Math.round(ow/tot*100) : 0;
+  const fecha = new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const numHdrs = Array.from({length:20},(_,i)=>`<td class="nh">${i+1}</td>`).join('');
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<title>${titulo}</title>
+<title>Control Figuritas Mundial 2026</title>
 <style>
+@page{size:A4 portrait;margin:5mm}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,Helvetica,sans-serif;font-size:7.5pt;color:#111;margin:8mm}
-h1{font-size:10pt;text-align:center;color:#C8102E;margin-bottom:1mm;letter-spacing:1px}
-.meta{text-align:center;font-size:6.5pt;color:#666;margin-bottom:3mm}
-.cols{column-count:3;column-gap:5mm}
-.gh{font-size:6.5pt;font-weight:bold;text-transform:uppercase;color:#C8102E;
-    border-bottom:.4pt solid #C8102E;padding-bottom:.5pt;margin:4pt 0 1pt;
-    break-inside:avoid;page-break-inside:avoid;break-before:auto}
-.tr{break-inside:avoid;page-break-inside:avoid;line-height:1.45;margin-bottom:.5pt}
-.tc{font-weight:bold;display:inline-block;min-width:26pt;font-size:7pt}
-.tl{color:#444}
-@media print{body{margin:6mm}.cols{column-count:3}}
+body{font-family:Arial,Helvetica,sans-serif;font-size:6pt;color:#111;background:#fff;padding:1mm 2mm}
+.hdr{text-align:center;padding:2mm 0 1.5mm;border-bottom:2pt solid #C8102E;margin-bottom:1.5mm;display:flex;align-items:center;justify-content:center;gap:8pt}
+.t1{font-family:Impact,'Arial Black',sans-serif;font-size:12pt;font-weight:900;color:#1a7c3e;text-transform:uppercase;letter-spacing:2px;line-height:1}
+.t2{font-family:Impact,'Arial Black',sans-serif;font-size:16pt;font-weight:900;color:#E8C800;text-transform:uppercase;letter-spacing:2px;line-height:1;-webkit-text-stroke:.6pt #aa8800}
+.meta{font-size:5pt;color:#666;margin-top:1mm}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+.gh{color:#fff;font-weight:900;font-size:6pt;text-transform:uppercase;padding:1.5pt 3pt;letter-spacing:1px}
+.gc{width:9pt;text-align:center;color:#fff;font-weight:900;font-size:5.5pt;padding:0;vertical-align:middle}
+.fl{width:9pt;text-align:center;font-size:7.5pt;padding:0;vertical-align:middle;line-height:1}
+.tn{width:48pt;font-size:5.5pt;font-weight:bold;padding:0 2pt;overflow:hidden;white-space:nowrap;vertical-align:middle}
+.sc{text-align:center;border:.3pt solid #ddd;font-size:5pt;height:12pt;vertical-align:middle;padding:0}
+.o{background:#e8f5e9;color:#bbb}
+.m{background:#C8102E;color:#fff;font-weight:bold;border-color:#a00}
+.mc{width:11pt;text-align:center;font-weight:bold;font-size:5.5pt;border-left:.5pt solid #ccc;vertical-align:middle}
+.nh{text-align:center;font-size:4.5pt;color:#999;border:.2pt solid #eee;height:9pt;vertical-align:middle;padding:0}
 </style></head><body>
-<h1>⚽ ${titulo}</h1>
-<div class="meta">Mundial 2026 Panini · ${owned}/${total} completadas (${pct}%) · Faltan ${total - owned} · ${fecha}</div>
-<div class="cols">${content}</div>
+<div class="hdr">
+  <div>
+    <div class="t1">Tabla de Control de Figuritas</div>
+    <div class="t2">Copa del Mundo 2026</div>
+    <div class="meta">Panini · ${ow}/${tot} completadas · ${pct}% · Faltan ${tot-ow} · ${fecha}${sortAlpha?' · A-Z':' · Por Grupo'}</div>
+  </div>
+</div>
+<table>
+<thead><tr>
+  <td class="gc" style="background:#555"></td>
+  <td class="fl"></td>
+  <td class="tn" style="font-size:4.5pt;color:#888">EQUIPO</td>
+  ${numHdrs}
+  <td class="mc" style="font-size:4.5pt;color:#888">❌</td>
+</tr></thead>
+<tbody>
+${rows}
+<tr><td colspan="24" style="height:3pt;background:#f0f0f0;border-top:1pt solid #ddd"></td></tr>
+${specialCells('INTRO','FWC',20)}
+${specialCells('CC','CC',20)}
+${specialCells('PANINI','PANINI',20)}
+</tbody>
+</table>
+<div style="margin-top:2mm;font-size:4.5pt;color:#bbb;text-align:center">⬛ Falta · ✓ Tengo</div>
 <script>window.onload=()=>{window.print()}<\/script>
 </body></html>`;
 
