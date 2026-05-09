@@ -1,7 +1,73 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="32" fill="#010D1E"/>
-  <circle cx="96" cy="84" r="62" fill="#C8102E"/>
-  <circle cx="96" cy="84" r="57" fill="none" stroke="#FFB800" stroke-width="5"/>
-  <text x="96" y="108" font-family="Arial Black,Impact,sans-serif" font-size="58" font-weight="900" text-anchor="middle" fill="#FFFFFF">26</text>
-  <text x="96" y="162" font-family="Arial Narrow,Arial,sans-serif" font-size="22" font-weight="700" text-anchor="middle" fill="#FFB800" letter-spacing="7">PANINI</text>
+  <defs>
+    <linearGradient id="g" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#FFE066"/>
+      <stop offset="100%" stop-color="#B8860B"/>
+    </linearGradient>
+    <clipPath id="cup-clip">
+      <path d="M62,34 L130,34 C128,60 116,92 106,112 L86,112 C76,92 64,60 62,34 Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- Fondo -->
+  <rect width="192" height="192" rx="36" fill="#010D1E"/>
+
+  <!-- Tres franjas adentro de la copa (USA rojo, blanco, México verde) -->
+  <rect x="62" y="34" width="23" height="78" clip-path="url(#cup-clip)" fill="#B22234"/>
+  <rect x="85" y="34" width="22" height="78" clip-path="url(#cup-clip)" fill="#FFFFFF" opacity=".9"/>
+  <rect x="107" y="34" width="23" height="78" clip-path="url(#cup-clip)" fill="#006847"/>
+
+  <!-- Copa (contorno dorado relleno, luego recortamos) -->
+  <path d="
+    M 54,34 L 138,34 L 138,46
+    L 152,46 Q 166,46 166,68 Q 166,92 142,98
+    C 135,112 122,118 112,120
+    L 108,142 L 128,142 L 128,155 L 64,155 L 64,142 L 84,142
+    L 80,120 C 70,118 57,112 50,98
+    Q 26,92 26,68 Q 26,46 40,46
+    L 54,46 Z
+  " fill="url(#g)"/>
+
+  <!-- Hueco interior de la copa (tapa las franjas que se salieron) -->
+  <path d="
+    M 54,34 L 138,34 L 138,46 L 54,46 Z
+    M 62,34 L 130,34 C 128,60 116,92 106,112 L 86,112 C 76,92 64,60 62,34 Z
+  " fill="url(#g)" fill-rule="evenodd" opacity="0"/>
+
+  <!-- Silueta exterior de la copa para tapar lo que sobresale de las franjas -->
+  <path d="
+    M 0,0 L 192,0 L 192,192 L 0,192 Z
+    M 54,34 L 138,34 L 138,46
+    L 152,46 Q 166,46 166,68 Q 166,92 142,98
+    C 135,112 122,118 112,120
+    L 108,142 L 128,142 L 128,155 L 64,155 L 64,142 L 84,142
+    L 80,120 C 70,118 57,112 50,98
+    Q 26,92 26,68 Q 26,46 40,46
+    L 54,46 Z
+  " fill="#010D1E" fill-rule="evenodd"/>
+
+  <!-- Copa dorada encima (marco) -->
+  <path d="
+    M 54,34 L 138,34 L 138,46
+    L 152,46 Q 166,46 166,68 Q 166,92 142,98
+    C 135,112 122,118 112,120
+    L 108,142 L 128,142 L 128,155 L 64,155 L 64,142 L 84,142
+    L 80,120 C 70,118 57,112 50,98
+    Q 26,92 26,68 Q 26,46 40,46
+    L 54,46 Z
+  " fill="none" stroke="url(#g)" stroke-width="6"/>
+
+  <!-- "26" encima -->
+  <text x="96" y="97"
+    font-family="Arial Black,Impact,sans-serif"
+    font-size="42" font-weight="900"
+    text-anchor="middle"
+    fill="#010D1E">26</text>
+
+  <!-- "FIFA WC" abajo -->
+  <text x="96" y="178"
+    font-family="Arial,sans-serif"
+    font-size="13" font-weight="700"
+    text-anchor="middle"
+    fill="#FFE066" letter-spacing="2">FIFA WC 2026</text>
 </svg>
