@@ -2630,18 +2630,25 @@ renderCollection();
 // ═══════════════════════════════════════════
 // REPETIDAS
 // ═══════════════════════════════════════════
-let repeats = {};
 let currentRepeImage = null;
 let currentRepeMime = 'image/jpeg';
 let pendingRepes = [];
 
-function loadRepeats() {
-  try { repeats = JSON.parse(localStorage.getItem('album2026_repeats_v1') || '{}'); } catch(e) { repeats = {}; }
-}
-function saveRepeats() {
-  localStorage.setItem('album2026_repeats_v1', JSON.stringify(repeats));
-}
-loadRepeats();
+// Migrar datos viejos de album2026_repeats_v1 a collection.count
+(function migrateRepeats() {
+  try {
+    const old = JSON.parse(localStorage.getItem('album2026_repeats_v1') || '{}');
+    let migrated = false;
+    for (const [code, cnt] of Object.entries(old)) {
+      if (cnt > 0) {
+        if (!collection[code]) collection[code] = {owned: true, count: cnt};
+        else collection[code].count = Math.max(collection[code].count || 1, cnt);
+        migrated = true;
+      }
+    }
+    if (migrated) { saveState(); localStorage.removeItem('album2026_repeats_v1'); }
+  } catch(e) {}
+})();
 
 document.getElementById('file-input-repes').addEventListener('change', e => {
   const file = e.target.files[0];
@@ -2767,9 +2774,12 @@ function showRepesResult(detected) {
 
 function applyRepes() {
   pendingRepes.forEach(code => {
-    repeats[code] = (repeats[code] || 0) + 1;
+    if (!collection[code]) collection[code] = {owned: true, count: 1};
+    collection[code].owned = true;
+    collection[code].count = (collection[code].count || 1) + 1;
   });
-  saveRepeats();
+  saveState();
+  updateHeader();
   pendingRepes = [];
   document.getElementById('repes-result').style.display = 'none';
   renderRepes();
@@ -2777,39 +2787,42 @@ function applyRepes() {
 }
 
 function removeRepe(code) {
-  if (repeats[code] > 1) repeats[code]--;
-  else delete repeats[code];
-  saveRepeats();
+  if (!collection[code]) return;
+  if ((collection[code].count || 1) > 1) collection[code].count--;
+  else { collection[code].count = 1; } // mínimo: 1 copia (owned)
+  saveState();
   renderRepes();
 }
 
 function renderRepes() {
   const container = document.getElementById('repes-list');
   const allStickers = getAllStickers();
-  const total = Object.values(repeats).reduce((a, b) => a + b, 0);
-  if (!total) {
+  const repeEntries = Object.entries(collection).filter(([,v]) => v.owned && (v.count||1) > 1);
+  const total = repeEntries.reduce((a,[,v]) => a + ((v.count||1) - 1), 0);
+  if (!repeEntries.length) {
     container.innerHTML = `<div class="empty-state"><div class="empty-icon">🔁</div><div class="empty-text">Sin repetidas aún</div></div>`;
     return;
   }
   // Group by team
   const byTeam = {};
-  for (const [code, cnt] of Object.entries(repeats)) {
+  for (const [code, v] of repeEntries) {
+    const cnt = v.count || 1;
     const s = allStickers.find(x => x.code === code);
     const teamKey = s ? s.team : '?';
     const teamLabel = s ? s.teamLabel : '?';
     if (!byTeam[teamKey]) byTeam[teamKey] = { label: teamLabel, items: [] };
     byTeam[teamKey].items.push({ code, name: s?.name || code, cnt });
   }
-  let html = `<div class="section-header" style="margin-bottom:8px;">Total: ${total} repetida${total !== 1 ? 's' : ''}</div>`;
+  let html = `<div class="section-header" style="margin-bottom:8px;">Total: ${total} repetida${total !== 1 ? 's' : ''} de ${repeEntries.length} figurita${repeEntries.length !== 1 ? 's' : ''}</div>`;
   for (const [, team] of Object.entries(byTeam)) {
-    const teamTotal = team.items.reduce((a, b) => a + b.cnt, 0);
-    html += `<div class="section-header">${team.label} <span class="section-count">${teamTotal}</span></div><div class="missing-list">`;
+    const teamTotal = team.items.reduce((a, b) => a + (b.cnt - 1), 0);
+    html += `<div class="section-header">${team.label} <span class="section-count">${teamTotal} repe${teamTotal !== 1 ? 's' : ''}</span></div><div class="missing-list">`;
     for (const item of team.items) {
       html += `<div class="missing-row" style="display:flex;align-items:center;justify-content:space-between;">
         <div><span style="font-weight:bold;color:var(--gold)">${item.code}</span> <span style="color:var(--muted);font-size:12px">${item.name}</span></div>
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="color:var(--blue);font-weight:bold;">×${item.cnt}</span>
-          <button onclick="removeRepe('${item.code}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px;">−</button>
+          <span style="color:var(--blue);font-weight:bold;">${item.cnt} copias</span>
+          <button onclick="removeRepe('${item.code}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px;" title="Quitar una copia">−</button>
         </div>
       </div>`;
     }
