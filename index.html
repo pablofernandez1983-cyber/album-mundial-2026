@@ -583,7 +583,7 @@
       </svg>
       <div>
         <div class="app-title">MUNDIAL 2026</div>
-        <div class="app-subtitle">Panini · Mi Colección <span style="opacity:0.5;font-size:9px;letter-spacing:0">v2.5</span></div>
+        <div class="app-subtitle">Panini · Mi Colección <span style="opacity:0.5;font-size:9px;letter-spacing:0">v2.6</span></div>
       </div>
     </div>
     <div class="stats-pill" id="header-stats">0 / 0</div>
@@ -2458,10 +2458,11 @@ function printReport(sortAlpha) {
 
   let blocks = '';
 
-  function teamLine(key, gc) {
+  function teamBlock(key, gc) {
     const nums = missingNums(key);
     if (!nums.length) return '';
-    return `<div class="tl"><span class="fl">${FLAGS[key]||''}</span><span class="tc">${ALBUM[key].label}:</span> <span class="nums">${nums.join(', ')}</span></div>`;
+    const boxes = nums.map(n => `<span class="nb">${n}</span>`).join('');
+    return `<div class="tb"><div class="tname"><span class="tf">${FLAGS[key]||''}</span><span class="tn">${ALBUM[key].label}</span><span class="tg" style="background:${gc}">${groupOf[key]}</span></div><div class="boxes">${boxes}</div></div>`;
   }
 
   if (sortAlpha) {
@@ -2469,14 +2470,14 @@ function printReport(sortAlpha) {
     let lastL = '';
     let col = '';
     sorted.forEach(k => {
-      const line = teamLine(k, colorOf[k]);
-      if (!line) return;
+      const block = teamBlock(k, colorOf[k]);
+      if (!block) return;
       const letter = ALBUM[k].label[0].toUpperCase();
       if (letter !== lastL) {
         col += `<div class="gh" style="background:#555">— ${letter} —</div>`;
         lastL = letter;
       }
-      col += line;
+      col += block;
     });
     blocks = col;
   } else {
@@ -2485,7 +2486,7 @@ function printReport(sortAlpha) {
         const g=GROUPS[i/4], gc=GC[i/4];
         blocks += `<div class="gh" style="background:${gc}">GRUPO ${g}</div>`;
       }
-      blocks += teamLine(k, colorOf[k]);
+      blocks += teamBlock(k, colorOf[k]);
     });
   }
 
@@ -2493,8 +2494,8 @@ function printReport(sortAlpha) {
   function specialBlock(key, prefix, label, color) {
     const nums = missingNums(key, prefix);
     if (!nums.length) return '';
-    return `<div class="gh" style="background:${color}">${label}</div>
-    <div class="tl"><span class="tc" style="min-width:0;margin-right:3pt">${prefix}:</span><span class="nums">${nums.join(', ')}</span></div>`;
+    const boxes = nums.map(n => `<span class="nb">${n}</span>`).join('');
+    return `<div class="gh" style="background:${color}">${label}</div><div class="tb"><div class="boxes">${boxes}</div></div>`;
   }
 
   blocks += specialBlock('INTRO','FWC','Introducción (FWC)','#555');
@@ -2508,19 +2509,22 @@ function printReport(sortAlpha) {
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>Figuritas Faltantes — Mundial 2026</title>
 <style>
-@page{size:A4 portrait;margin:7mm}
+@page{size:A4 portrait;margin:8mm}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,Helvetica,sans-serif;font-size:7pt;color:#111;background:#fff}
-.hdr{text-align:center;padding-bottom:2mm;border-bottom:2pt solid #C8102E;margin-bottom:2mm}
-.t1{font-family:Impact,'Arial Black',sans-serif;font-size:11pt;font-weight:900;color:#1a7c3e;text-transform:uppercase;letter-spacing:2px;line-height:1.1}
-.t2{font-family:Impact,'Arial Black',sans-serif;font-size:15pt;font-weight:900;color:#E8C800;text-transform:uppercase;letter-spacing:2px;line-height:1.1;-webkit-text-stroke:.5pt #9a7000}
-.meta{font-size:5.5pt;color:#777;margin-top:1mm}
-.cols{column-count:3;column-gap:4mm}
-.gh{color:#fff;font-weight:900;font-size:6pt;text-transform:uppercase;padding:1.5pt 4pt;letter-spacing:1px;margin:3pt 0 1pt;break-inside:avoid;page-break-inside:avoid}
-.tl{break-inside:avoid;page-break-inside:avoid;line-height:1.5;display:flex;align-items:baseline;gap:2pt}
-.fl{font-size:8pt;line-height:1;flex-shrink:0}
-.tc{font-weight:bold;font-size:6pt;white-space:nowrap;flex-shrink:0}
-.nums{font-size:6pt;color:#C8102E;font-weight:bold}
+body{font-family:Arial,Helvetica,sans-serif;font-size:8pt;color:#111;background:#fff}
+.hdr{text-align:center;padding-bottom:2.5mm;border-bottom:2.5pt solid #C8102E;margin-bottom:3mm}
+.t1{font-family:Impact,'Arial Black',sans-serif;font-size:12pt;font-weight:900;color:#1a7c3e;text-transform:uppercase;letter-spacing:2px;line-height:1.1}
+.t2{font-family:Impact,'Arial Black',sans-serif;font-size:16pt;font-weight:900;color:#E8C800;text-transform:uppercase;letter-spacing:2px;line-height:1.1;-webkit-text-stroke:.5pt #9a7000}
+.meta{font-size:6pt;color:#777;margin-top:1.5mm}
+.cols{column-count:2;column-gap:5mm}
+.gh{color:#fff;font-weight:900;font-size:7.5pt;text-transform:uppercase;padding:2pt 5pt;letter-spacing:1px;margin:5pt 0 2pt;break-inside:avoid;page-break-inside:avoid;column-span:all}
+.tb{break-inside:avoid;page-break-inside:avoid;margin-bottom:4pt}
+.tname{display:flex;align-items:center;gap:3pt;margin-bottom:2pt}
+.tf{font-size:10pt;line-height:1;flex-shrink:0}
+.tn{font-weight:bold;font-size:8pt;flex:1}
+.tg{color:#fff;font-size:6pt;font-weight:900;padding:1pt 3pt;border-radius:2pt;flex-shrink:0}
+.boxes{display:flex;flex-wrap:wrap;gap:2pt}
+.nb{display:inline-flex;align-items:center;justify-content:center;width:15pt;height:15pt;border:1.2pt solid #C8102E;border-radius:2pt;font-size:7.5pt;font-weight:bold;color:#C8102E}
 </style></head><body>
 <div class="hdr">
   <div class="t1">Tabla de Control de Figuritas</div>
