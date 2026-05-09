@@ -12,6 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mundial 2026">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --bg: #010D1E;
@@ -501,6 +502,28 @@
   }
 
   /* ── API KEY MODAL ── */
+  /* ── USER MODAL ── */
+  #user-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.92); z-index: 2000;
+    align-items: center; justify-content: center;
+  }
+  #user-modal.show { display: flex; }
+  .user-modal-box {
+    background: var(--surface); border: 1px solid var(--gold2);
+    border-radius: 18px; padding: 28px 24px; width: 90%; max-width: 360px;
+    animation: slideUp .25s ease;
+  }
+  .user-modal-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 22px;
+    color: var(--gold); letter-spacing: 2px; text-align: center; margin-bottom: 4px;
+  }
+  .user-modal-sub { font-size: 12px; color: var(--muted); text-align: center; letter-spacing: 2px; margin-bottom: 20px; }
+  .user-btn-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; max-height: 240px; overflow-y: auto; }
+  .user-divider { border: none; border-top: 1px solid var(--surface2); margin: 4px 0 16px; }
+  .user-tag { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px 3px 6px; font-size: 12px; color: var(--muted); cursor: pointer; }
+  .user-tag:hover { border-color: var(--gold2); color: var(--gold); }
+
   .modal-overlay {
     display: none;
     position: fixed; inset: 0;
@@ -579,10 +602,13 @@
       <img src="https://www.lanacion.com.ar/resizer/v2/la-portada-del-album-de-panini-del-mundial-V2KT2NILPZANTD5LE2DNLPTJXE.jpg?auth=692bdd300bdd70833c287ea3f7f6eaaca39d814a110b73ac138c56120ac3796f&width=1200&height=800&quality=70&smart=true" height="52" style="flex-shrink:0;width:auto;object-fit:contain;border-radius:5px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.7))" onerror="this.src='https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png'">
       <div>
         <div class="app-title">MUNDIAL 2026</div>
-        <div class="app-subtitle">Panini · Mi Colección <span style="opacity:0.5;font-size:9px;letter-spacing:0">v3.4</span></div>
+        <div class="app-subtitle">Panini · Mi Colección <span style="opacity:0.5;font-size:9px;letter-spacing:0">v3.5</span></div>
       </div>
     </div>
-    <div class="stats-pill" id="header-stats">0 / 0</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="user-tag" id="user-tag" onclick="showUserModal()" title="Cambiar usuario">👤 <span id="user-tag-name">...</span></span>
+      <div class="stats-pill" id="header-stats">0 / 0</div>
+    </div>
   </div>
   <div class="progress-wrap">
     <div class="progress-bar" id="progress-bar" style="width:0%"></div>
@@ -665,6 +691,18 @@
   <div id="missing-container"></div>
 </div>
 
+<!-- USER MODAL -->
+<div id="user-modal">
+  <div class="user-modal-box">
+    <div class="user-modal-title">¿Quién sos?</div>
+    <div class="user-modal-sub">MUNDIAL 2026 · MI ÁLBUM</div>
+    <div class="user-btn-list" id="user-btn-list"><div style="color:var(--muted);font-size:13px;text-align:center;">Cargando...</div></div>
+    <hr class="user-divider">
+    <input id="new-user-input" class="modal-input" placeholder="Nuevo usuario..." style="margin-bottom:8px;" onkeydown="if(event.key==='Enter')createUser()">
+    <button class="btn btn-gold" onclick="createUser()" style="width:100%;">+ Crear usuario</button>
+  </div>
+</div>
+
 <!-- PANEL: REPETIDAS -->
 <div class="panel" id="panel-repes">
   <div class="scan-area" onclick="document.getElementById('file-input-repes').click()">
@@ -683,6 +721,10 @@
     <div class="section-header">Detectadas <span class="section-count" id="repes-count-label"></span></div>
     <div class="sticker-chips" id="repes-chips" style="margin-top:8px; margin-bottom:12px;"></div>
     <button class="btn btn-gold apply-btn" onclick="applyRepes()">✅ Agregar a mis repetidas</button>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:12px;">
+    <button class="btn btn-outline" style="flex:1;" onclick="printRepes()">📄 Reporte repes</button>
+    <button class="btn btn-outline" style="flex:1;color:var(--red);" onclick="clearAllRepes()">🗑️ Limpiar todas</button>
   </div>
   <div id="repes-list" style="margin-top:16px;"></div>
 </div>
@@ -1985,14 +2027,105 @@ let pendingUnknown = [];
 let currentImageBase64 = null;
 let currentMimeType = 'image/jpeg';
 
+// ── SUPABASE ──
+const SUPABASE_URL = "https://zqwkznlgbkofsrygqezk.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpxd2t6bmxnYmtvZnNyeWdxZXprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MTAzMTAsImV4cCI6MjA5MTA4NjMxMH0.GNt-G_RUcxLYCpSqAKKI4KxNU87bBEQAJVCr88R2wQE";
+let sb = null;
+let currentUser = null;
+let saveTimer = null;
+
+function lsKey() { return currentUser ? `album2026_v4_${currentUser}` : 'album2026_v4'; }
+
 function loadState() {
+  currentUser = localStorage.getItem('album2026_user') || null;
   try {
-    const saved = localStorage.getItem('album2026_v4');
+    const saved = localStorage.getItem(lsKey());
     if (saved) collection = JSON.parse(saved);
   } catch(e) {}
+  if (currentUser) document.getElementById('user-tag-name').textContent = currentUser;
 }
 function saveState() {
-  localStorage.setItem('album2026_v4', JSON.stringify(collection));
+  localStorage.setItem(lsKey(), JSON.stringify(collection));
+  if (currentUser && sb) {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      sb.from('collections').upsert({ user_name: currentUser, data: collection, updated_at: new Date().toISOString() }).then(() => {}).catch(() => {});
+    }, 1500);
+  }
+}
+
+async function syncFromSupabase() {
+  if (!currentUser || !sb) return;
+  try {
+    const { data } = await sb.from('collections').select('data').eq('user_name', currentUser).single();
+    if (data?.data) {
+      collection = data.data;
+      localStorage.setItem(lsKey(), JSON.stringify(collection));
+      updateHeader();
+      const activeTab = document.querySelector('.tab.active')?.dataset.tab;
+      if (activeTab === 'coleccion') renderCollection();
+      if (activeTab === 'faltantes') renderMissing();
+      if (activeTab === 'repes') renderRepes();
+      if (activeTab === 'stats') renderStats();
+    }
+  } catch(e) {}
+}
+
+async function showUserModal() {
+  document.getElementById('user-modal').classList.add('show');
+  const list = document.getElementById('user-btn-list');
+  list.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;">Cargando...</div>';
+  try {
+    const { data } = await sb.from('collections').select('user_name, updated_at').order('updated_at', {ascending: false});
+    if (data && data.length > 0) {
+      list.innerHTML = data.map(u =>
+        `<button class="btn btn-outline" onclick="selectUser('${u.user_name}')" style="width:100%;text-align:left;">👤 ${u.user_name}</button>`
+      ).join('');
+    } else {
+      list.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;">Sin usuarios todavía</div>';
+    }
+  } catch(e) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;">Sin conexión</div>';
+  }
+}
+
+async function selectUser(name) {
+  currentUser = name;
+  localStorage.setItem('album2026_user', name);
+  document.getElementById('user-modal').classList.remove('show');
+  document.getElementById('user-tag-name').textContent = name;
+  setLoading(true);
+  try {
+    const { data } = await sb.from('collections').select('data').eq('user_name', name).single();
+    if (data?.data) {
+      collection = data.data;
+      localStorage.setItem(lsKey(), JSON.stringify(collection));
+    }
+  } catch(e) {}
+  setLoading(false);
+  updateHeader();
+  renderCollection();
+  showToast(`👤 ${name}`);
+}
+
+async function createUser() {
+  const name = document.getElementById('new-user-input').value.trim();
+  if (!name) return;
+  // Si no había usuario, migrar datos del key viejo
+  if (!localStorage.getItem('album2026_user')) {
+    try {
+      const old = localStorage.getItem('album2026_v4');
+      if (old) collection = JSON.parse(old);
+    } catch(e) {}
+  }
+  currentUser = name;
+  localStorage.setItem('album2026_user', name);
+  document.getElementById('user-modal').classList.remove('show');
+  document.getElementById('user-tag-name').textContent = name;
+  saveState();
+  updateHeader();
+  renderCollection();
+  showToast(`👤 ${name} creado`);
 }
 function getAllStickers() {
   const all = [];
@@ -2621,13 +2754,6 @@ function resetCollection() {
 }
 
 // ═══════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════
-loadState();
-updateHeader();
-renderCollection();
-
-// ═══════════════════════════════════════════
 // REPETIDAS
 // ═══════════════════════════════════════════
 let currentRepeImage = null;
@@ -2830,6 +2956,115 @@ function renderRepes() {
   }
   container.innerHTML = html;
 }
+
+function clearAllRepes() {
+  const repes = Object.values(collection).filter(v => v.owned && (v.count||1) > 1);
+  if (!repes.length) { showToast('No tenés repetidas'); return; }
+  if (!confirm(`¿Borrar todas las repetidas? (${repes.length} figuritas quedan en 1 copia)`)) return;
+  for (const code of Object.keys(collection)) {
+    if (collection[code]?.count > 1) collection[code].count = 1;
+  }
+  saveState();
+  renderRepes();
+  showToast('🗑️ Repetidas limpiadas');
+}
+
+function printRepes() {
+  const GROUPS = 'ABCDEFGHIJKL'.split('');
+  const GC = ['#C8102E','#003DA5','#E8630A','#00843D','#7B2D8B','#00A3E0','#D4006C','#1A3A5C','#C49A00','#006B3F','#9B1D20','#5B2C6F'];
+  const FLAGS = {MEX:'🇲🇽',RSA:'🇿🇦',KOR:'🇰🇷',CZE:'🇨🇿',CAN:'🇨🇦',BIH:'🇧🇦',QAT:'🇶🇦',SUI:'🇨🇭',BRA:'🇧🇷',MAR:'🇲🇦',HAI:'🇭🇹',SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',USA:'🇺🇸',PAR:'🇵🇾',AUS:'🇦🇺',TUR:'🇹🇷',GER:'🇩🇪',CUW:'🇨🇼',CIV:'🇨🇮',ECU:'🇪🇨',NED:'🇳🇱',JPN:'🇯🇵',SWE:'🇸🇪',TUN:'🇹🇳',BEL:'🇧🇪',EGY:'🇪🇬',IRN:'🇮🇷',NZL:'🇳🇿',ESP:'🇪🇸',CPV:'🇨🇻',KSA:'🇸🇦',URU:'🇺🇾',FRA:'🇫🇷',SEN:'🇸🇳',IRQ:'🇮🇶',NOR:'🇳🇴',ARG:'🇦🇷',ALG:'🇩🇿',AUT:'🇦🇹',JOR:'🇯🇴',POR:'🇵🇹',COD:'🇨🇩',UZB:'🇺🇿',COL:'🇨🇴',ENG:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',CRO:'🇭🇷',GHA:'🇬🇭',PAN:'🇵🇦'};
+  const teamKeys = Object.keys(ALBUM).filter(k => !['INTRO','CC','PANINI'].includes(k));
+  const groupOf = {}, colorOf = {};
+  teamKeys.forEach((k,i) => { groupOf[k]=GROUPS[Math.floor(i/4)]; colorOf[k]=GC[Math.floor(i/4)]; });
+
+  let blocks = '';
+  teamKeys.forEach((k,i) => {
+    const repes = ALBUM[k].stickers.filter(s => (collection[s.code]?.count||0) > 1);
+    if (!repes.length) return;
+    if (i%4===0 || !blocks.includes(`GRUPO ${GROUPS[Math.floor(i/4)]}`)) {
+      // only add group header if this group has repes
+      const groupHasRepes = teamKeys.slice(Math.floor(i/4)*4, Math.floor(i/4)*4+4)
+        .some(tk => ALBUM[tk].stickers.some(s => (collection[s.code]?.count||0) > 1));
+      if (i%4===0 && groupHasRepes) blocks += `<div class="gh" style="background:${colorOf[k]}">GRUPO ${groupOf[k]}</div>`;
+    }
+    const label = ALBUM[k].label.replace('Bosnia y Herzegovina','Bosnia').replace('Estados Unidos','EE.UU.');
+    const boxes = repes.map(s => {
+      const cnt = collection[s.code].count;
+      const num = s.code.replace(k,'');
+      return `<span class="nb" title="${cnt} copias">${num}${cnt>2?`<sup style="font-size:4pt">x${cnt}</sup>`:''}</span>`;
+    }).join('');
+    blocks += `<div class="tb"><span class="tf">${FLAGS[k]||''}</span><span class="tn">${label}</span>${boxes}</div>`;
+  });
+
+  // Specials
+  ['INTRO','CC','PANINI'].forEach(key => {
+    const lbl = {INTRO:'Introducción (FWC)',CC:'Coca-Cola',PANINI:'Panini'}[key];
+    const gc = {INTRO:'#555',CC:'#E8192C',PANINI:'#003DA5'}[key];
+    const prefix = {INTRO:'FWC',CC:'CC',PANINI:'PANINI'}[key];
+    const repes = ALBUM[key].stickers.filter(s => (collection[s.code]?.count||0) > 1);
+    if (!repes.length) return;
+    const boxes = repes.map(s => {
+      const cnt = collection[s.code].count;
+      const num = s.code.replace(prefix,'');
+      return `<span class="nb">${num}${cnt>2?`<sup style="font-size:4pt">x${cnt}</sup>`:''}</span>`;
+    }).join('');
+    blocks += `<div class="gh" style="background:${gc}">${lbl}</div><div class="tb">${boxes}</div>`;
+  });
+
+  if (!blocks) { showToast('No tenés repetidas para reportar'); return; }
+  const total = Object.values(collection).reduce((a,v) => a + (v.owned && v.count > 1 ? v.count-1 : 0), 0);
+  const fecha = new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const userLine = currentUser ? ` · ${currentUser}` : '';
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Repetidas — Mundial 2026</title>
+<style>
+@page{size:A4 portrait;margin:6mm}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;font-size:7pt;color:#111;background:#fff}
+.hdr{display:flex;align-items:center;gap:4mm;padding-bottom:1.5mm;border-bottom:2pt solid #003DA5;margin-bottom:2mm}
+.hdr-logo{height:18mm;width:auto;flex-shrink:0}
+.hdr-txt{flex:1}
+.t1{font-family:Impact,'Arial Black',sans-serif;font-size:9pt;font-weight:900;color:#003DA5;text-transform:uppercase;letter-spacing:2px;line-height:1.1}
+.t2{font-family:Impact,'Arial Black',sans-serif;font-size:12pt;font-weight:900;color:#C8A900;text-transform:uppercase;letter-spacing:1.5px;line-height:1.2}
+.meta{font-size:5.5pt;color:#777;margin-top:1mm}
+.cols{column-count:2;column-gap:4mm}
+.gh{color:#fff;font-weight:900;font-size:6.5pt;text-transform:uppercase;padding:1.5pt 4pt;letter-spacing:1px;margin:3pt 0 1.5pt;break-inside:avoid;page-break-inside:avoid}
+.tb{display:flex;flex-wrap:wrap;align-items:center;gap:1.5pt;margin-bottom:2pt;break-inside:avoid;page-break-inside:avoid}
+.tf{font-size:8pt;line-height:1;flex-shrink:0}
+.tn{font-weight:bold;font-size:7pt;flex-shrink:0;margin-right:1.5pt}
+.nb{display:inline-flex;align-items:center;justify-content:center;width:9pt;height:9pt;border:0.8pt solid #003DA5;border-radius:1pt;font-size:6pt;font-weight:bold;color:#003DA5;position:relative}
+</style></head><body>
+<div class="hdr">
+  <img class="hdr-logo" src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png">
+  <div class="hdr-txt">
+    <div class="t1">Mis Repetidas · Álbum Panini</div>
+    <div class="t2">FIFA World Cup 2026™</div>
+    <div class="meta">${total} figurita${total!==1?'s':''} repetida${total!==1?'s':''} para intercambiar · ${fecha}${userLine}</div>
+  </div>
+</div>
+<div class="cols">${blocks}</div>
+<script>window.onload=()=>{window.print()}<\/script>
+</body></html>`;
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+(async function init() {
+  try { sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) {}
+  loadState();
+  updateHeader();
+  renderCollection();
+  if (!currentUser) {
+    await showUserModal();
+  } else {
+    syncFromSupabase();
+  }
+})();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
