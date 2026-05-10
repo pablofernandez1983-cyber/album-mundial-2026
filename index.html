@@ -109,10 +109,10 @@
   }
   .tab {
     flex: 1;
-    padding: 11px 4px;
+    padding: 7px 4px;
     text-align: center;
     font-family: 'Barlow Condensed', sans-serif;
-    font-size: 13px;
+    font-size: 10px;
     letter-spacing: 1px;
     text-transform: uppercase;
     color: var(--muted);
@@ -120,7 +120,12 @@
     border-bottom: 2px solid transparent;
     transition: all 0.2s;
     user-select: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
   }
+  .tab-icon { font-size: 18px; line-height: 1; }
   .tab.active {
     color: var(--blue);
     border-bottom-color: var(--blue);
@@ -742,11 +747,11 @@
 
 <!-- TABS -->
 <div class="tabs">
-  <div class="tab active" data-tab="scan">📸 Escanear</div>
-  <div class="tab" data-tab="coleccion">📋 Colección</div>
-  <div class="tab" data-tab="faltantes">❌ Faltantes</div>
-  <div class="tab" data-tab="repes">🔁 Repes</div>
-  <div class="tab" data-tab="stats">📊 Stats</div>
+  <div class="tab active" data-tab="scan"><span class="tab-icon">📸</span>Escanear</div>
+  <div class="tab" data-tab="coleccion"><span class="tab-icon">📋</span>Colección</div>
+  <div class="tab" data-tab="faltantes"><span class="tab-icon">❌</span>Faltantes</div>
+  <div class="tab" data-tab="repes"><span class="tab-icon">🔁</span>Repes</div>
+  <div class="tab" data-tab="stats"><span class="tab-icon">📊</span>Stats</div>
 </div>
 
 <!-- PANEL: SCAN -->
