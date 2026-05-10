@@ -2788,6 +2788,7 @@ function printReport(sortAlpha) {
   const ow = ownedCount(), tot = totalStickers();
   const pct = tot ? Math.round(ow/tot*100) : 0;
   const fecha = new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const userLine = currentUser || 'Sin usuario';
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>Figuritas Faltantes — Mundial 2026</title>
@@ -2795,12 +2796,17 @@ function printReport(sortAlpha) {
 @page{size:A4 portrait;margin:6mm}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,Helvetica,sans-serif;font-size:7pt;color:#111;background:#fff}
-.hdr{display:flex;align-items:center;gap:4mm;padding-bottom:1.5mm;border-bottom:2pt solid #C8102E;margin-bottom:2mm}
-.hdr-logo{height:18mm;width:auto;flex-shrink:0}
-.hdr-txt{flex:1}
-.t1{font-family:Impact,'Arial Black',sans-serif;font-size:9pt;font-weight:900;color:#1a7c3e;text-transform:uppercase;letter-spacing:2px;line-height:1.1}
-.t2{font-family:Impact,'Arial Black',sans-serif;font-size:12pt;font-weight:900;color:#C8A900;text-transform:uppercase;letter-spacing:1.5px;line-height:1.2}
-.meta{font-size:5.5pt;color:#777;margin-top:1mm}
+.hdr{background:linear-gradient(135deg,#CC0020 0%,#003DA5 52%,#007A3D 100%);padding:3mm 4mm;display:flex;align-items:center;gap:4mm;margin-bottom:3mm;border-radius:2mm}
+.hdr-logo{height:16mm;width:auto;flex-shrink:0;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
+.hdr-mid{flex:1;min-width:0}
+.hdr-tag{font-size:5pt;letter-spacing:2px;color:rgba(255,255,255,.7);text-transform:uppercase;margin-bottom:0.8mm}
+.hdr-title{font-family:Impact,'Arial Black',sans-serif;font-size:15pt;font-weight:900;color:#FFE066;text-transform:uppercase;letter-spacing:1.5px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,.4);margin-bottom:1mm}
+.hdr-user{font-size:7.5pt;color:#fff;font-weight:bold;margin-bottom:0.5mm}
+.hdr-meta{font-size:5pt;color:rgba(255,255,255,.6)}
+.hdr-pill{background:rgba(0,0,0,.3);border-radius:1.5mm;padding:2mm 3mm;text-align:right;flex-shrink:0}
+.hdr-pill-big{font-family:Impact,'Arial Black',sans-serif;font-size:16pt;font-weight:900;color:#FFE066;line-height:1}
+.hdr-pill-label{font-size:4.5pt;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:1px;margin-top:0.5mm}
+.hdr-pill-sub{font-family:Impact,'Arial Black',sans-serif;font-size:8.5pt;color:#fff;margin-top:0.5mm}
 .cols{column-count:2;column-gap:4mm}
 .gh{color:#fff;font-weight:900;font-size:6.5pt;text-transform:uppercase;padding:1.5pt 4pt;letter-spacing:1px;margin:3pt 0 1.5pt;break-inside:avoid;page-break-inside:avoid}
 .tb{display:flex;flex-wrap:wrap;align-items:center;gap:1.5pt;margin-bottom:2pt;break-inside:avoid;page-break-inside:avoid}
@@ -2810,10 +2816,16 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:7pt;color:#111;background:
 </style></head><body>
 <div class="hdr">
   <img class="hdr-logo" src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png">
-  <div class="hdr-txt">
-    <div class="t1">Figuritas Faltantes · Álbum Panini</div>
-    <div class="t2">FIFA World Cup 2026™</div>
-    <div class="meta">${ow}/${tot} completadas · ${pct}% · Faltan ${tot-ow} · ${fecha}${sortAlpha?' · A-Z':' · Por Grupo'}</div>
+  <div class="hdr-mid">
+    <div class="hdr-tag">Álbum Panini · FIFA World Cup 2026™</div>
+    <div class="hdr-title">Figuritas Faltantes</div>
+    <div class="hdr-user">👤 ${userLine}</div>
+    <div class="hdr-meta">${fecha} · ${sortAlpha ? 'Orden A-Z' : 'Por Grupo'}</div>
+  </div>
+  <div class="hdr-pill">
+    <div class="hdr-pill-big">${tot - ow}</div>
+    <div class="hdr-pill-label">me faltan</div>
+    <div class="hdr-pill-sub">${ow}/${tot} · ${pct}%</div>
   </div>
 </div>
 <div class="cols">${blocks}</div>
@@ -3193,12 +3205,16 @@ function printRepes() {
 @page{size:A4 portrait;margin:6mm}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,Helvetica,sans-serif;font-size:7pt;color:#111;background:#fff}
-.hdr{display:flex;align-items:center;gap:4mm;padding-bottom:1.5mm;border-bottom:2pt solid #003DA5;margin-bottom:2mm}
-.hdr-logo{height:18mm;width:auto;flex-shrink:0}
-.hdr-txt{flex:1}
-.t1{font-family:Impact,'Arial Black',sans-serif;font-size:9pt;font-weight:900;color:#003DA5;text-transform:uppercase;letter-spacing:2px;line-height:1.1}
-.t2{font-family:Impact,'Arial Black',sans-serif;font-size:12pt;font-weight:900;color:#C8A900;text-transform:uppercase;letter-spacing:1.5px;line-height:1.2}
-.meta{font-size:5.5pt;color:#777;margin-top:1mm}
+.hdr{background:linear-gradient(135deg,#003DA5 0%,#CC0020 52%,#007A3D 100%);padding:3mm 4mm;display:flex;align-items:center;gap:4mm;margin-bottom:3mm;border-radius:2mm}
+.hdr-logo{height:16mm;width:auto;flex-shrink:0;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
+.hdr-mid{flex:1;min-width:0}
+.hdr-tag{font-size:5pt;letter-spacing:2px;color:rgba(255,255,255,.7);text-transform:uppercase;margin-bottom:0.8mm}
+.hdr-title{font-family:Impact,'Arial Black',sans-serif;font-size:15pt;font-weight:900;color:#FFE066;text-transform:uppercase;letter-spacing:1.5px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,.4);margin-bottom:1mm}
+.hdr-user{font-size:7.5pt;color:#fff;font-weight:bold;margin-bottom:0.5mm}
+.hdr-meta{font-size:5pt;color:rgba(255,255,255,.6)}
+.hdr-pill{background:rgba(0,0,0,.3);border-radius:1.5mm;padding:2mm 3mm;text-align:right;flex-shrink:0}
+.hdr-pill-big{font-family:Impact,'Arial Black',sans-serif;font-size:16pt;font-weight:900;color:#FFE066;line-height:1}
+.hdr-pill-label{font-size:4.5pt;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:1px;margin-top:0.5mm}
 .cols{column-count:2;column-gap:4mm}
 .gh{color:#fff;font-weight:900;font-size:6.5pt;text-transform:uppercase;padding:1.5pt 4pt;letter-spacing:1px;margin:3pt 0 1.5pt;break-inside:avoid;page-break-inside:avoid}
 .tb{display:flex;flex-wrap:wrap;align-items:center;gap:1.5pt;margin-bottom:2pt;break-inside:avoid;page-break-inside:avoid}
@@ -3208,10 +3224,15 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:7pt;color:#111;background:
 </style></head><body>
 <div class="hdr">
   <img class="hdr-logo" src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png">
-  <div class="hdr-txt">
-    <div class="t1">Mis Repetidas · Álbum Panini</div>
-    <div class="t2">FIFA World Cup 2026™</div>
-    <div class="meta">${total} figurita${total!==1?'s':''} repetida${total!==1?'s':''} para intercambiar · ${fecha}${userLine}</div>
+  <div class="hdr-mid">
+    <div class="hdr-tag">Álbum Panini · FIFA World Cup 2026™</div>
+    <div class="hdr-title">Mis Repetidas</div>
+    <div class="hdr-user">👤 ${currentUser || 'Sin usuario'}</div>
+    <div class="hdr-meta">${fecha} · Para intercambiar</div>
+  </div>
+  <div class="hdr-pill">
+    <div class="hdr-pill-big">${total}</div>
+    <div class="hdr-pill-label">repetidas</div>
   </div>
 </div>
 <div class="cols">${blocks}</div>
