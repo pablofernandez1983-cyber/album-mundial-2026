@@ -799,6 +799,10 @@
 <!-- PANEL: COLECCIÓN -->
 <div class="panel" id="panel-coleccion">
   <input type="text" class="search-bar" placeholder="🔍 País (ARG, Brasil...) o jugador" id="search-input" oninput="renderCollection()">
+  <div style="display:flex;gap:8px;margin-bottom:10px;">
+    <button class="share-btn" style="margin-bottom:0;flex:1;" onclick="printCombined(false)">🖨️ Reporte completo</button>
+    <button class="share-btn" style="margin-bottom:0;flex:1;" onclick="printCombined(true)">📥 PDF completo</button>
+  </div>
   <div class="filter-row">
     <div class="filter-chip active" data-filter="all" onclick="setFilter('all',this)">Todas</div>
     <div class="filter-chip" data-filter="owned" onclick="setFilter('owned',this)">Tengo</div>
@@ -811,9 +815,11 @@
 <!-- PANEL: FALTANTES -->
 <div class="panel" id="panel-faltantes">
   <button class="share-btn" onclick="shareMissing()">📤 Compartir lista de faltantes</button>
-  <div style="display:flex;gap:8px;margin-bottom:14px;">
-    <button class="share-btn" style="margin-bottom:0;" onclick="printReport(false)">🖨️ Imprimir por grupo</button>
-    <button class="share-btn" style="margin-bottom:0;" onclick="printReport(true)">🔤 Imprimir A-Z</button>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+    <button class="share-btn" style="margin-bottom:0;" onclick="printReport(false,false)">🖨️ Por grupo</button>
+    <button class="share-btn" style="margin-bottom:0;" onclick="printReport(false,true)">📥 PDF por grupo</button>
+    <button class="share-btn" style="margin-bottom:0;" onclick="printReport(true,false)">🖨️ A-Z</button>
+    <button class="share-btn" style="margin-bottom:0;" onclick="printReport(true,true)">📥 PDF A-Z</button>
   </div>
   <div id="missing-container"></div>
 </div>
@@ -849,9 +855,10 @@
     <div class="sticker-chips" id="repes-chips" style="margin-top:8px; margin-bottom:12px;"></div>
     <button class="btn btn-gold apply-btn" onclick="applyRepes()">✅ Agregar a mis repetidas</button>
   </div>
-  <div style="display:flex;gap:8px;margin-top:12px;">
-    <button class="btn btn-outline" style="flex:1;" onclick="printRepes()">📄 Reporte repes</button>
-    <button class="btn btn-outline" style="flex:1;color:var(--red);" onclick="clearAllRepes()">🗑️ Limpiar todas</button>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;">
+    <button class="btn btn-outline" onclick="printRepes(false)">🖨️ Imprimir</button>
+    <button class="btn btn-outline" onclick="printRepes(true)">📥 PDF</button>
+    <button class="btn btn-outline" style="color:var(--red);" onclick="clearAllRepes()">🗑️ Limpiar</button>
   </div>
   <div id="repes-list" style="margin-top:16px;"></div>
 </div>
@@ -2729,7 +2736,7 @@ function renderMissing() {
   container.innerHTML = html;
 }
 
-function printReport(sortAlpha) {
+function printReport(sortAlpha, download=false) {
   const GROUPS = 'ABCDEFGHIJKL'.split('');
   const GC = ['#C8102E','#003DA5','#E8630A','#00843D','#7B2D8B','#00A3E0','#D4006C','#1A3A5C','#C49A00','#006B3F','#9B1D20','#5B2C6F'];
   const FLAGS = {MEX:'🇲🇽',RSA:'🇿🇦',KOR:'🇰🇷',CZE:'🇨🇿',CAN:'🇨🇦',BIH:'🇧🇦',QAT:'🇶🇦',SUI:'🇨🇭',BRA:'🇧🇷',MAR:'🇲🇦',HAI:'🇭🇹',SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',USA:'🇺🇸',PAR:'🇵🇾',AUS:'🇦🇺',TUR:'🇹🇷',GER:'🇩🇪',CUW:'🇨🇼',CIV:'🇨🇮',ECU:'🇪🇨',NED:'🇳🇱',JPN:'🇯🇵',SWE:'🇸🇪',TUN:'🇹🇳',BEL:'🇧🇪',EGY:'🇪🇬',IRN:'🇮🇷',NZL:'🇳🇿',ESP:'🇪🇸',CPV:'🇨🇻',KSA:'🇸🇦',URU:'🇺🇾',FRA:'🇫🇷',SEN:'🇸🇳',IRQ:'🇮🇶',NOR:'🇳🇴',ARG:'🇦🇷',ALG:'🇩🇿',AUT:'🇦🇹',JOR:'🇯🇴',POR:'🇵🇹',COD:'🇨🇩',UZB:'🇺🇿',COL:'🇨🇴',ENG:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',CRO:'🇭🇷',GHA:'🇬🇭',PAN:'🇵🇦'};
@@ -2792,29 +2799,9 @@ function printReport(sortAlpha) {
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>Figuritas Faltantes — Mundial 2026</title>
-<style>
-@page{size:A4 portrait;margin:6mm}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,Helvetica,sans-serif;font-size:7pt;color:#111;background:#fff}
-.hdr{background:linear-gradient(135deg,#CC0020 0%,#003DA5 52%,#007A3D 100%);padding:3mm 4mm;display:flex;align-items:center;gap:4mm;margin-bottom:3mm;border-radius:2mm}
-.hdr-logo{height:16mm;width:auto;flex-shrink:0;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
-.hdr-mid{flex:1;min-width:0}
-.hdr-tag{font-size:5pt;letter-spacing:2px;color:rgba(255,255,255,.7);text-transform:uppercase;margin-bottom:0.8mm}
-.hdr-title{font-family:Impact,'Arial Black',sans-serif;font-size:15pt;font-weight:900;color:#FFE066;text-transform:uppercase;letter-spacing:1.5px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,.4);margin-bottom:1mm}
-.hdr-user{font-size:7.5pt;color:#fff;font-weight:bold;margin-bottom:0.5mm}
-.hdr-meta{font-size:5pt;color:rgba(255,255,255,.6)}
-.hdr-pill{background:rgba(0,0,0,.3);border-radius:1.5mm;padding:2mm 3mm;text-align:right;flex-shrink:0}
-.hdr-pill-big{font-family:Impact,'Arial Black',sans-serif;font-size:16pt;font-weight:900;color:#FFE066;line-height:1}
-.hdr-pill-label{font-size:4.5pt;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:1px;margin-top:0.5mm}
-.hdr-pill-sub{font-family:Impact,'Arial Black',sans-serif;font-size:8.5pt;color:#fff;margin-top:0.5mm}
-.cols{column-count:2;column-gap:4mm}
-.gh{color:#fff;font-weight:900;font-size:6.5pt;text-transform:uppercase;padding:1.5pt 4pt;letter-spacing:1px;margin:3pt 0 1.5pt;break-inside:avoid;page-break-inside:avoid}
-.tb{display:flex;flex-wrap:wrap;align-items:center;gap:1.5pt;margin-bottom:2pt;break-inside:avoid;page-break-inside:avoid}
-.tf{font-size:8pt;line-height:1;flex-shrink:0}
-.tn{font-weight:bold;font-size:7pt;flex-shrink:0;margin-right:1.5pt}
-.nb{display:inline-flex;align-items:center;justify-content:center;width:9pt;height:9pt;border:0.8pt solid #333;border-radius:1pt;font-size:6pt;font-weight:bold;color:#222}
-</style></head><body>
-<div class="hdr">
+<style>${pdfCss('#222')}</style></head><body>
+${download ? `<div class="dl-bar"><button class="dl-btn" onclick="window.print()">💾 Guardar como PDF</button><span>En el diálogo de impresión seleccioná <strong>Guardar como PDF</strong> como destino</span></div>` : ''}
+<div class="hdr" style="background:linear-gradient(135deg,#CC0020 0%,#003DA5 52%,#007A3D 100%)">
   <img class="hdr-logo" src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png">
   <div class="hdr-mid">
     <div class="hdr-tag">Álbum Panini · FIFA World Cup 2026™</div>
@@ -2829,12 +2816,10 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:7pt;color:#111;background:
   </div>
 </div>
 <div class="cols">${blocks}</div>
-<script>window.onload=()=>{window.print()}<\/script>
+${download ? '' : `<script>window.onload=()=>{window.print()}<\/script>`}
 </body></html>`;
 
-  const w = window.open('', '_blank');
-  w.document.write(html);
-  w.document.close();
+  openPdfWindow(html);
 }
 
 function shareMissing() {
@@ -3097,7 +3082,6 @@ function renderRepes() {
     container.innerHTML = `<div class="empty-state"><div class="empty-icon">🔁</div><div class="empty-text">Sin repetidas aún</div></div>`;
     return;
   }
-  // Build byTeam map
   const byTeam = {};
   for (const [code, v] of repeEntries) {
     const s = allStickers.find(x => x.code === code);
@@ -3106,28 +3090,22 @@ function renderRepes() {
     if (!byTeam[teamKey]) byTeam[teamKey] = { label: teamLabel, items: [] };
     byTeam[teamKey].items.push({ code, name: s?.name || code, cnt: v.count || 1 });
   }
-  // Iterate in ALBUM order (same as collection)
-  const orderedKeys = Object.keys(ALBUM).filter(k => byTeam[k]);
-  // Add any orphan keys not in ALBUM (edge case)
-  Object.keys(byTeam).forEach(k => { if (!orderedKeys.includes(k)) orderedKeys.push(k); });
-
+  const SPECIALS = ['INTRO','CC','PANINI'];
+  const teamKeys = Object.keys(ALBUM).filter(k => !SPECIALS.includes(k));
   const GROUPS = 'ABCDEFGHIJKL'.split('');
-  const teamKeys = Object.keys(ALBUM).filter(k => !['INTRO','CC','PANINI'].includes(k));
+  // Keys ordenados por ALBUM, separando equipos de specials
+  const teamOrderedKeys = teamKeys.filter(k => byTeam[k]);
+  const specialOrderedKeys = SPECIALS.filter(k => byTeam[k]);
+
   let html = `<div class="section-header" style="margin-bottom:8px;">Total: ${total} repetida${total !== 1 ? 's' : ''} de ${repeEntries.length} figurita${repeEntries.length !== 1 ? 's' : ''}</div>`;
   let lastGroup = -1;
 
-  for (const key of orderedKeys) {
+  function teamBlock(key) {
     const team = byTeam[key];
-    const pos = teamKeys.indexOf(key);
-    const grp = pos >= 0 ? Math.floor(pos / 4) : -1;
-    if (grp >= 0 && grp !== lastGroup) {
-      lastGroup = grp;
-      html += `<div class="group-sep"><span>Grupo ${GROUPS[grp]}</span></div>`;
-    }
     const teamTotal = team.items.reduce((a, b) => a + (b.cnt - 1), 0);
-    html += `<div class="section-header">${team.label} <span class="section-count">${teamTotal} repe${teamTotal !== 1 ? 's' : ''}</span></div><div class="missing-list">`;
+    let s = `<div class="section-header">${team.label} <span class="section-count">${teamTotal} repe${teamTotal !== 1 ? 's' : ''}</span></div><div class="missing-list">`;
     for (const item of team.items) {
-      html += `<div class="missing-row" style="display:flex;align-items:center;justify-content:space-between;">
+      s += `<div class="missing-row" style="display:flex;align-items:center;justify-content:space-between;">
         <div><span style="font-weight:bold;color:var(--gold)">${item.code}</span> <span style="color:var(--muted);font-size:12px">${item.name}</span></div>
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="color:var(--blue);font-weight:bold;">${item.cnt} copias</span>
@@ -3135,8 +3113,27 @@ function renderRepes() {
         </div>
       </div>`;
     }
-    html += `</div>`;
+    return s + `</div>`;
   }
+
+  // Equipos por grupo
+  for (const key of teamOrderedKeys) {
+    const pos = teamKeys.indexOf(key);
+    const grp = Math.floor(pos / 4);
+    if (grp !== lastGroup) {
+      lastGroup = grp;
+      html += `<div class="group-sep"><span>Grupo ${GROUPS[grp]}</span></div>`;
+    }
+    html += teamBlock(key);
+  }
+
+  // Specials al final
+  const specialLabels = {INTRO:'Introducción',CC:'Coca-Cola',PANINI:'Panini'};
+  for (const key of specialOrderedKeys) {
+    html += `<div class="group-sep"><span>${specialLabels[key]}</span></div>`;
+    html += teamBlock(key);
+  }
+
   container.innerHTML = html;
 }
 
@@ -3152,7 +3149,7 @@ function clearAllRepes() {
   showToast('🗑️ Repetidas limpiadas');
 }
 
-function printRepes() {
+function buildRepesBlocks() {
   const GROUPS = 'ABCDEFGHIJKL'.split('');
   const GC = ['#C8102E','#003DA5','#E8630A','#00843D','#7B2D8B','#00A3E0','#D4006C','#1A3A5C','#C49A00','#006B3F','#9B1D20','#5B2C6F'];
   const FLAGS = {MEX:'🇲🇽',RSA:'🇿🇦',KOR:'🇰🇷',CZE:'🇨🇿',CAN:'🇨🇦',BIH:'🇧🇦',QAT:'🇶🇦',SUI:'🇨🇭',BRA:'🇧🇷',MAR:'🇲🇦',HAI:'🇭🇹',SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',USA:'🇺🇸',PAR:'🇵🇾',AUS:'🇦🇺',TUR:'🇹🇷',GER:'🇩🇪',CUW:'🇨🇼',CIV:'🇨🇮',ECU:'🇪🇨',NED:'🇳🇱',JPN:'🇯🇵',SWE:'🇸🇪',TUN:'🇹🇳',BEL:'🇧🇪',EGY:'🇪🇬',IRN:'🇮🇷',NZL:'🇳🇿',ESP:'🇪🇸',CPV:'🇨🇻',KSA:'🇸🇦',URU:'🇺🇾',FRA:'🇫🇷',SEN:'🇸🇳',IRQ:'🇮🇶',NOR:'🇳🇴',ARG:'🇦🇷',ALG:'🇩🇿',AUT:'🇦🇹',JOR:'🇯🇴',POR:'🇵🇹',COD:'🇨🇩',UZB:'🇺🇿',COL:'🇨🇴',ENG:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',CRO:'🇭🇷',GHA:'🇬🇭',PAN:'🇵🇦'};
@@ -3161,14 +3158,14 @@ function printRepes() {
   teamKeys.forEach((k,i) => { groupOf[k]=GROUPS[Math.floor(i/4)]; colorOf[k]=GC[Math.floor(i/4)]; });
 
   let blocks = '';
+  let lastGrp = -1;
   teamKeys.forEach((k,i) => {
     const repes = ALBUM[k].stickers.filter(s => (collection[s.code]?.count||0) > 1);
     if (!repes.length) return;
-    if (i%4===0 || !blocks.includes(`GRUPO ${GROUPS[Math.floor(i/4)]}`)) {
-      // only add group header if this group has repes
-      const groupHasRepes = teamKeys.slice(Math.floor(i/4)*4, Math.floor(i/4)*4+4)
-        .some(tk => ALBUM[tk].stickers.some(s => (collection[s.code]?.count||0) > 1));
-      if (i%4===0 && groupHasRepes) blocks += `<div class="gh" style="background:${colorOf[k]}">GRUPO ${groupOf[k]}</div>`;
+    const grp = Math.floor(i/4);
+    if (grp !== lastGrp) {
+      lastGrp = grp;
+      blocks += `<div class="gh" style="background:${colorOf[k]}">GRUPO ${groupOf[k]}</div>`;
     }
     const label = ALBUM[k].label.replace('Bosnia y Herzegovina','Bosnia').replace('Estados Unidos','EE.UU.');
     const boxes = repes.map(s => {
@@ -3179,7 +3176,6 @@ function printRepes() {
     blocks += `<div class="tb"><span class="tf">${FLAGS[k]||''}</span><span class="tn">${label}</span>${boxes}</div>`;
   });
 
-  // Specials
   ['INTRO','CC','PANINI'].forEach(key => {
     const lbl = {INTRO:'Introducción (FWC)',CC:'Coca-Cola',PANINI:'Panini'}[key];
     const gc = {INTRO:'#555',CC:'#E8192C',PANINI:'#003DA5'}[key];
@@ -3193,19 +3189,14 @@ function printRepes() {
     }).join('');
     blocks += `<div class="gh" style="background:${gc}">${lbl}</div><div class="tb">${boxes}</div>`;
   });
+  return blocks;
+}
 
-  if (!blocks) { showToast('No tenés repetidas para reportar'); return; }
-  const total = Object.values(collection).reduce((a,v) => a + (v.owned && v.count > 1 ? v.count-1 : 0), 0);
-  const fecha = new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
-  const userLine = currentUser ? ` · ${currentUser}` : '';
-
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<title>Repetidas — Mundial 2026</title>
-<style>
-@page{size:A4 portrait;margin:6mm}
+function pdfCss(nbColor) {
+  return `@page{size:A4 portrait;margin:6mm}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,Helvetica,sans-serif;font-size:7pt;color:#111;background:#fff}
-.hdr{background:linear-gradient(135deg,#003DA5 0%,#CC0020 52%,#007A3D 100%);padding:3mm 4mm;display:flex;align-items:center;gap:4mm;margin-bottom:3mm;border-radius:2mm}
+.hdr{padding:3mm 4mm;display:flex;align-items:center;gap:4mm;margin-bottom:3mm;border-radius:2mm}
 .hdr-logo{height:16mm;width:auto;flex-shrink:0;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
 .hdr-mid{flex:1;min-width:0}
 .hdr-tag{font-size:5pt;letter-spacing:2px;color:rgba(255,255,255,.7);text-transform:uppercase;margin-bottom:0.8mm}
@@ -3215,14 +3206,36 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:7pt;color:#111;background:
 .hdr-pill{background:rgba(0,0,0,.3);border-radius:1.5mm;padding:2mm 3mm;text-align:right;flex-shrink:0}
 .hdr-pill-big{font-family:Impact,'Arial Black',sans-serif;font-size:16pt;font-weight:900;color:#FFE066;line-height:1}
 .hdr-pill-label{font-size:4.5pt;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:1px;margin-top:0.5mm}
+.hdr-pill-sub{font-family:Impact,'Arial Black',sans-serif;font-size:8.5pt;color:#fff;margin-top:0.5mm}
 .cols{column-count:2;column-gap:4mm}
 .gh{color:#fff;font-weight:900;font-size:6.5pt;text-transform:uppercase;padding:1.5pt 4pt;letter-spacing:1px;margin:3pt 0 1.5pt;break-inside:avoid;page-break-inside:avoid}
 .tb{display:flex;flex-wrap:wrap;align-items:center;gap:1.5pt;margin-bottom:2pt;break-inside:avoid;page-break-inside:avoid}
 .tf{font-size:8pt;line-height:1;flex-shrink:0}
 .tn{font-weight:bold;font-size:7pt;flex-shrink:0;margin-right:1.5pt}
-.nb{display:inline-flex;align-items:center;justify-content:center;width:9pt;height:9pt;border:0.8pt solid #003DA5;border-radius:1pt;font-size:6pt;font-weight:bold;color:#003DA5;position:relative}
-</style></head><body>
-<div class="hdr">
+.nb{display:inline-flex;align-items:center;justify-content:center;width:9pt;height:9pt;border:0.8pt solid ${nbColor};border-radius:1pt;font-size:6pt;font-weight:bold;color:${nbColor};position:relative}
+.sec-title{font-family:Impact,'Arial Black',sans-serif;font-size:11pt;font-weight:900;color:#003DA5;text-transform:uppercase;letter-spacing:1px;border-bottom:1.5pt solid #003DA5;padding-bottom:1mm;margin:4mm 0 2mm}
+.dl-bar{display:flex;align-items:center;gap:10px;background:#003DA5;color:#fff;padding:7px 12px;margin-bottom:4mm;border-radius:2mm;font-size:8.5pt}
+.dl-btn{background:#FFE066;color:#003DA5;border:none;border-radius:3px;padding:5px 12px;font-weight:900;font-size:8.5pt;cursor:pointer;white-space:nowrap}
+@media print{.dl-bar{display:none!important}}`;
+}
+
+function openPdfWindow(html) {
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+}
+
+function printRepes(download=false) {
+  const blocks = buildRepesBlocks();
+  if (!blocks) { showToast('No tenés repetidas para reportar'); return; }
+  const total = Object.values(collection).reduce((a,v) => a + (v.owned && v.count > 1 ? v.count-1 : 0), 0);
+  const fecha = new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Repetidas — Mundial 2026</title>
+<style>${pdfCss('#003DA5')}</style></head><body>
+${download ? `<div class="dl-bar"><button class="dl-btn" onclick="window.print()">💾 Guardar como PDF</button><span>En el diálogo de impresión seleccioná <strong>Guardar como PDF</strong> como destino</span></div>` : ''}
+<div class="hdr" style="background:linear-gradient(135deg,#003DA5 0%,#CC0020 52%,#007A3D 100%)">
   <img class="hdr-logo" src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png">
   <div class="hdr-mid">
     <div class="hdr-tag">Álbum Panini · FIFA World Cup 2026™</div>
@@ -3236,11 +3249,68 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:7pt;color:#111;background:
   </div>
 </div>
 <div class="cols">${blocks}</div>
-<script>window.onload=()=>{window.print()}<\/script>
+${download ? '' : `<script>window.onload=()=>{window.print()}<\/script>`}
 </body></html>`;
-  const w = window.open('', '_blank');
-  w.document.write(html);
-  w.document.close();
+  openPdfWindow(html);
+}
+
+function printCombined(download=false) {
+  const missingBlocks = (() => {
+    const GROUPS = 'ABCDEFGHIJKL'.split('');
+    const GC = ['#C8102E','#003DA5','#E8630A','#00843D','#7B2D8B','#00A3E0','#D4006C','#1A3A5C','#C49A00','#006B3F','#9B1D20','#5B2C6F'];
+    const FLAGS = {MEX:'🇲🇽',RSA:'🇿🇦',KOR:'🇰🇷',CZE:'🇨🇿',CAN:'🇨🇦',BIH:'🇧🇦',QAT:'🇶🇦',SUI:'🇨🇭',BRA:'🇧🇷',MAR:'🇲🇦',HAI:'🇭🇹',SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',USA:'🇺🇸',PAR:'🇵🇾',AUS:'🇦🇺',TUR:'🇹🇷',GER:'🇩🇪',CUW:'🇨🇼',CIV:'🇨🇮',ECU:'🇪🇨',NED:'🇳🇱',JPN:'🇯🇵',SWE:'🇸🇪',TUN:'🇹🇳',BEL:'🇧🇪',EGY:'🇪🇬',IRN:'🇮🇷',NZL:'🇳🇿',ESP:'🇪🇸',CPV:'🇨🇻',KSA:'🇸🇦',URU:'🇺🇾',FRA:'🇫🇷',SEN:'🇸🇳',IRQ:'🇮🇶',NOR:'🇳🇴',ARG:'🇦🇷',ALG:'🇩🇿',AUT:'🇦🇹',JOR:'🇯🇴',POR:'🇵🇹',COD:'🇨🇩',UZB:'🇺🇿',COL:'🇨🇴',ENG:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',CRO:'🇭🇷',GHA:'🇬🇭',PAN:'🇵🇦'};
+    const teamKeys = Object.keys(ALBUM).filter(k => !['INTRO','CC','PANINI'].includes(k));
+    const groupOf = {}, colorOf = {};
+    teamKeys.forEach((k,i) => { groupOf[k]=GROUPS[Math.floor(i/4)]; colorOf[k]=GC[Math.floor(i/4)]; });
+    function missingNums(key, prefix) { return ALBUM[key].stickers.filter(s => !collection[s.code]?.owned).map(s => s.code.replace(prefix||key,'')); }
+    function teamBlock(key) {
+      const nums = missingNums(key);
+      if (!nums.length) return '';
+      const label = ALBUM[key].label.replace('Bosnia y Herzegovina','Bosnia').replace('Estados Unidos','EE.UU.');
+      return `<div class="tb"><span class="tf">${FLAGS[key]||''}</span><span class="tn">${label}</span>${nums.map(n=>`<span class="nb">${n}</span>`).join('')}</div>`;
+    }
+    let b = '';
+    teamKeys.forEach((k,i) => { if (i%4===0){const g=GROUPS[i/4],gc=GC[i/4];b+=`<div class="gh" style="background:${gc}">GRUPO ${g}</div>`;} b+=teamBlock(k); });
+    function specialBlock(key, prefix, label, color) {
+      const nums = missingNums(key, prefix); if (!nums.length) return '';
+      return `<div class="gh" style="background:${color}">${label}</div><div class="tb">${nums.map(n=>`<span class="nb">${n}</span>`).join('')}</div>`;
+    }
+    b += specialBlock('INTRO','FWC','Introducción (FWC)','#555');
+    b += specialBlock('CC','CC','Coca-Cola (CC)','#E8192C');
+    b += specialBlock('PANINI','PANINI','Panini','#003DA5');
+    return b;
+  })();
+
+  const repesBlocks = buildRepesBlocks();
+  const ow = ownedCount(), tot = totalStickers();
+  const pct = tot ? Math.round(ow/tot*100) : 0;
+  const totalRepes = Object.values(collection).reduce((a,v) => a + (v.owned && v.count > 1 ? v.count-1 : 0), 0);
+  const fecha = new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const user = currentUser || 'Sin usuario';
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Reporte Completo — Mundial 2026</title>
+<style>${pdfCss('#333')}</style></head><body>
+${download ? `<div class="dl-bar"><button class="dl-btn" onclick="window.print()">💾 Guardar como PDF</button><span>En el diálogo de impresión seleccioná <strong>Guardar como PDF</strong> como destino</span></div>` : ''}
+<div class="hdr" style="background:linear-gradient(135deg,#CC0020 0%,#003DA5 52%,#007A3D 100%)">
+  <img class="hdr-logo" src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png">
+  <div class="hdr-mid">
+    <div class="hdr-tag">Álbum Panini · FIFA World Cup 2026™</div>
+    <div class="hdr-title">Reporte Completo</div>
+    <div class="hdr-user">👤 ${user}</div>
+    <div class="hdr-meta">${fecha} · Faltantes + Repetidas</div>
+  </div>
+  <div class="hdr-pill">
+    <div class="hdr-pill-big">${tot - ow}</div>
+    <div class="hdr-pill-label">me faltan</div>
+    <div class="hdr-pill-sub">${ow}/${tot} · ${pct}%</div>
+  </div>
+</div>
+${missingBlocks ? `<div class="sec-title">❌ Figuritas faltantes · Por Grupo</div><div class="cols">${missingBlocks}</div>` : '<p style="color:#888;font-size:8pt;margin:4mm 0">¡No te falta ninguna!</p>'}
+${repesBlocks ? `<div style="page-break-before:always"></div><div class="sec-title" style="margin-top:0">🔁 Mis Repetidas · Para intercambiar (${totalRepes} figuritas)</div><div class="cols" style="--nb-color:#003DA5">${repesBlocks}</div>` : ''}
+${download ? '' : `<script>window.onload=()=>{window.print()}<\/script>`}
+</body></html>`;
+  openPdfWindow(html);
 }
 
 // ═══════════════════════════════════════════
