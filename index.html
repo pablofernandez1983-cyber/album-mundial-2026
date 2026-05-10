@@ -14,6 +14,8 @@
 <meta name="apple-mobile-web-app-title" content="Mundial 2026">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   :root {
     --bg: #010D1E;
@@ -641,7 +643,7 @@
     --text: #0D1B2A;
     --muted: #5A7A96;
     --border: #BDD5EA;
-    --tabs-top: 126px;
+    --tabs-top: 80px;
   }
   body.fun-mode header {
     background: linear-gradient(135deg, #CC0020 0%, #003DA5 52%, #007A3D 100%);
@@ -732,10 +734,6 @@
       <span class="user-tag" id="user-tag" onclick="showUserModal()" title="Cambiar usuario">👤 <span id="user-tag-name">...</span></span>
       <div class="stats-pill" id="header-stats">0 / 0</div>
     </div>
-  </div>
-  <div class="mascot-strip">
-    <img src="https://upload.wikimedia.org/wikipedia/en/9/94/Maple-Zayu-Clutch_%28mascot%29.jpeg" alt="Maple, Zayu y Clutch">
-    <img src="icon-packet.webp" alt="Sobres Panini">
   </div>
   <div class="progress-wrap">
     <div class="progress-bar" id="progress-bar" style="width:0%"></div>
@@ -2800,9 +2798,8 @@ function printReport(sortAlpha, download=false) {
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>Figuritas Faltantes — Mundial 2026</title>
 <style>${pdfCss('#222')}</style></head><body>
-${download ? `<div class="dl-bar"><button class="dl-btn" onclick="window.print()">💾 Guardar como PDF</button><span>En el diálogo de impresión seleccioná <strong>Guardar como PDF</strong> como destino</span></div>` : ''}
 <div class="hdr" style="background:linear-gradient(135deg,#CC0020 0%,#003DA5 52%,#007A3D 100%)">
-  <img class="hdr-logo" src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png">
+  <img class="hdr-logo" crossorigin="anonymous" src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png">
   <div class="hdr-mid">
     <div class="hdr-tag">Álbum Panini · FIFA World Cup 2026™</div>
     <div class="hdr-title">Figuritas Faltantes</div>
@@ -2819,7 +2816,8 @@ ${download ? `<div class="dl-bar"><button class="dl-btn" onclick="window.print()
 ${download ? '' : `<script>window.onload=()=>{window.print()}<\/script>`}
 </body></html>`;
 
-  openPdfWindow(html);
+  if (download) downloadPdf(html, `faltantes-mundial2026${sortAlpha?'-az':''}.pdf`);
+  else openPdfWindow(html);
 }
 
 function shareMissing() {
@@ -3108,7 +3106,7 @@ function renderRepes() {
       s += `<div class="missing-row" style="display:flex;align-items:center;justify-content:space-between;">
         <div><span style="font-weight:bold;color:var(--gold)">${item.code}</span> <span style="color:var(--muted);font-size:12px">${item.name}</span></div>
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="color:var(--blue);font-weight:bold;">${item.cnt} copias</span>
+          <span style="color:var(--blue);font-weight:bold;">${item.cnt - 1} repe${item.cnt - 1 !== 1 ? 's' : ''}</span>
           <button onclick="removeRepe('${item.code}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px;" title="Quitar una copia">−</button>
         </div>
       </div>`;
@@ -3213,16 +3211,51 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:7pt;color:#111;background:
 .tf{font-size:8pt;line-height:1;flex-shrink:0}
 .tn{font-weight:bold;font-size:7pt;flex-shrink:0;margin-right:1.5pt}
 .nb{display:inline-flex;align-items:center;justify-content:center;width:9pt;height:9pt;border:0.8pt solid ${nbColor};border-radius:1pt;font-size:6pt;font-weight:bold;color:${nbColor};position:relative}
-.sec-title{font-family:Impact,'Arial Black',sans-serif;font-size:11pt;font-weight:900;color:#003DA5;text-transform:uppercase;letter-spacing:1px;border-bottom:1.5pt solid #003DA5;padding-bottom:1mm;margin:4mm 0 2mm}
-.dl-bar{display:flex;align-items:center;gap:10px;background:#003DA5;color:#fff;padding:7px 12px;margin-bottom:4mm;border-radius:2mm;font-size:8.5pt}
-.dl-btn{background:#FFE066;color:#003DA5;border:none;border-radius:3px;padding:5px 12px;font-weight:900;font-size:8.5pt;cursor:pointer;white-space:nowrap}
-@media print{.dl-bar{display:none!important}}`;
+.sec-title{font-family:Impact,'Arial Black',sans-serif;font-size:11pt;font-weight:900;color:#003DA5;text-transform:uppercase;letter-spacing:1px;border-bottom:1.5pt solid #003DA5;padding-bottom:1mm;margin:4mm 0 2mm}`;
 }
 
 function openPdfWindow(html) {
   const w = window.open('', '_blank');
   w.document.write(html);
   w.document.close();
+}
+
+async function downloadPdf(htmlContent, filename) {
+  showToast('⏳ Generando PDF...');
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;height:5000px;border:none;';
+  document.body.appendChild(iframe);
+  iframe.contentDocument.write(htmlContent);
+  iframe.contentDocument.close();
+  await new Promise(r => setTimeout(r, 1400));
+  try {
+    const canvas = await html2canvas(iframe.contentDocument.body, {
+      scale: 2, useCORS: true, allowTaint: false, logging: false,
+      width: 794, scrollX: 0, scrollY: 0
+    });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pW = pdf.internal.pageSize.getWidth();
+    const pH = pdf.internal.pageSize.getHeight();
+    const scale = pW / canvas.width;
+    const pagePixH = Math.round(pH / scale);
+    let yPx = 0;
+    while (yPx < canvas.height) {
+      const sliceH = Math.min(pagePixH, canvas.height - yPx);
+      const slice = document.createElement('canvas');
+      slice.width = canvas.width; slice.height = sliceH;
+      slice.getContext('2d').drawImage(canvas, 0, yPx, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+      if (yPx > 0) pdf.addPage();
+      pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pW, sliceH * scale);
+      yPx += sliceH;
+    }
+    pdf.save(filename);
+    showToast('✅ PDF descargado');
+  } catch(e) {
+    showToast('Error al generar PDF — usá 🖨️ Imprimir');
+  } finally {
+    document.body.removeChild(iframe);
+  }
 }
 
 function printRepes(download=false) {
@@ -3234,9 +3267,8 @@ function printRepes(download=false) {
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>Repetidas — Mundial 2026</title>
 <style>${pdfCss('#003DA5')}</style></head><body>
-${download ? `<div class="dl-bar"><button class="dl-btn" onclick="window.print()">💾 Guardar como PDF</button><span>En el diálogo de impresión seleccioná <strong>Guardar como PDF</strong> como destino</span></div>` : ''}
 <div class="hdr" style="background:linear-gradient(135deg,#003DA5 0%,#CC0020 52%,#007A3D 100%)">
-  <img class="hdr-logo" src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png">
+  <img class="hdr-logo" crossorigin="anonymous" src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png">
   <div class="hdr-mid">
     <div class="hdr-tag">Álbum Panini · FIFA World Cup 2026™</div>
     <div class="hdr-title">Mis Repetidas</div>
@@ -3251,7 +3283,8 @@ ${download ? `<div class="dl-bar"><button class="dl-btn" onclick="window.print()
 <div class="cols">${blocks}</div>
 ${download ? '' : `<script>window.onload=()=>{window.print()}<\/script>`}
 </body></html>`;
-  openPdfWindow(html);
+  if (download) downloadPdf(html, 'repes-mundial2026.pdf');
+  else openPdfWindow(html);
 }
 
 function printCombined(download=false) {
@@ -3291,9 +3324,8 @@ function printCombined(download=false) {
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <title>Reporte Completo — Mundial 2026</title>
 <style>${pdfCss('#333')}</style></head><body>
-${download ? `<div class="dl-bar"><button class="dl-btn" onclick="window.print()">💾 Guardar como PDF</button><span>En el diálogo de impresión seleccioná <strong>Guardar como PDF</strong> como destino</span></div>` : ''}
 <div class="hdr" style="background:linear-gradient(135deg,#CC0020 0%,#003DA5 52%,#007A3D 100%)">
-  <img class="hdr-logo" src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png">
+  <img class="hdr-logo" crossorigin="anonymous" src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png">
   <div class="hdr-mid">
     <div class="hdr-tag">Álbum Panini · FIFA World Cup 2026™</div>
     <div class="hdr-title">Reporte Completo</div>
@@ -3307,10 +3339,11 @@ ${download ? `<div class="dl-bar"><button class="dl-btn" onclick="window.print()
   </div>
 </div>
 ${missingBlocks ? `<div class="sec-title">❌ Figuritas faltantes · Por Grupo</div><div class="cols">${missingBlocks}</div>` : '<p style="color:#888;font-size:8pt;margin:4mm 0">¡No te falta ninguna!</p>'}
-${repesBlocks ? `<div style="page-break-before:always"></div><div class="sec-title" style="margin-top:0">🔁 Mis Repetidas · Para intercambiar (${totalRepes} figuritas)</div><div class="cols" style="--nb-color:#003DA5">${repesBlocks}</div>` : ''}
+${repesBlocks ? `<div class="sec-title" style="margin-top:3mm">🔁 Mis Repetidas · Para intercambiar (${totalRepes} figuritas)</div><div class="cols">${repesBlocks}</div>` : ''}
 ${download ? '' : `<script>window.onload=()=>{window.print()}<\/script>`}
 </body></html>`;
-  openPdfWindow(html);
+  if (download) downloadPdf(html, 'reporte-completo-mundial2026.pdf');
+  else openPdfWindow(html);
 }
 
 // ═══════════════════════════════════════════
