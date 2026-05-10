@@ -102,7 +102,7 @@
     background: var(--surface);
     border-bottom: 1px solid var(--border);
     position: sticky;
-    top: 80px;
+    top: var(--tabs-top, 80px);
     z-index: 90;
   }
   .tab {
@@ -602,6 +602,117 @@
   }
   .empty-icon { font-size: 48px; margin-bottom: 10px; }
   .empty-text { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; letter-spacing: 1px; }
+
+  /* ── THEME TOGGLE BUTTON ── */
+  .theme-toggle {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 9px;
+    font-size: 15px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    line-height: 1;
+  }
+  .theme-toggle:hover { border-color: var(--gold); }
+
+  /* ── MASCOT STRIP (fun mode only) ── */
+  .mascot-strip {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 6px 0 4px;
+  }
+  body.fun-mode .mascot-strip { display: flex; }
+  .mascot-strip img { height: 38px; width: auto; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+
+  /* ── FUN MODE ── */
+  body.fun-mode {
+    --bg: #ECF4FF;
+    --surface: #FFFFFF;
+    --surface2: #DCF0FF;
+    --gold: #FFB800;
+    --gold2: #E09000;
+    --red: #E8192C;
+    --green: #009A44;
+    --blue: #003DA5;
+    --text: #0D1B2A;
+    --muted: #5A7A96;
+    --border: #BDD5EA;
+    --tabs-top: 126px;
+  }
+  body.fun-mode header {
+    background: linear-gradient(135deg, #CC0020 0%, #003DA5 52%, #007A3D 100%);
+  }
+  body.fun-mode .app-title {
+    background: linear-gradient(90deg, #FFE066, #FFFFFF, #FFE066);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  body.fun-mode .app-subtitle { color: rgba(255,255,255,0.75); }
+  body.fun-mode .user-tag { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.35); color: rgba(255,255,255,0.9); }
+  body.fun-mode .user-tag:hover { border-color: #FFE066; color: #FFE066; }
+  body.fun-mode .theme-toggle { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.35); color: #fff; }
+  body.fun-mode .stats-pill { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.3); color: #FFE066; }
+  body.fun-mode .progress-wrap { background: rgba(0,0,0,0.18); }
+  body.fun-mode .progress-bar { background: linear-gradient(90deg, #FFE066, #FFFFFF); }
+  body.fun-mode .tabs { background: #FFFFFF; border-bottom: 2px solid #BDD5EA; }
+  body.fun-mode .tab { color: #5A7A96; }
+  body.fun-mode .tab.active { color: #003DA5; border-bottom-color: #003DA5; }
+  body.fun-mode .section-header { color: #0D1B2A; background: linear-gradient(90deg, rgba(232,25,44,0.1) 0%, transparent 100%); }
+  body.fun-mode .scan-area { border-color: #BDD5EA; }
+  body.fun-mode .scan-label { color: #5A7A96; }
+  body.fun-mode .scan-hint { color: #8AAAC0; }
+  body.fun-mode .result-box { border-color: #BDD5EA; }
+  body.fun-mode .sticker-card { border-color: #BDD5EA; }
+  body.fun-mode .sticker-card.owned { border-color: #009A44; background: rgba(0,154,68,0.07); }
+  body.fun-mode .sticker-card.duplicate { border-color: #003DA5; background: rgba(0,61,165,0.07); }
+  body.fun-mode .sticker-code { color: #5A7A96; }
+  body.fun-mode .sticker-card.owned .sticker-code { color: #007832; }
+  body.fun-mode .sticker-card.duplicate .sticker-code { color: #003DA5; }
+  body.fun-mode .sticker-name { color: #5A7A96; }
+  body.fun-mode .sticker-card.owned .sticker-name { color: #00622A; }
+  body.fun-mode .dup-badge { background: #003DA5; }
+  body.fun-mode .search-bar { background: #FFFFFF; border-color: #BDD5EA; color: #0D1B2A; }
+  body.fun-mode .search-bar::placeholder { color: #7A9AB8; }
+  body.fun-mode .search-bar:focus { border-color: #003DA5; }
+  body.fun-mode .filter-chip { color: #5A7A96; border-color: #BDD5EA; }
+  body.fun-mode .filter-chip.active { background: rgba(0,61,165,0.1); border-color: #003DA5; color: #003DA5; }
+  body.fun-mode .group-sep { color: #7A9AB8; }
+  body.fun-mode .group-sep::before, body.fun-mode .group-sep::after { background: #C8E0F0; }
+  body.fun-mode .group-sep span { background: #C8E0F0; color: #7A9AB8; }
+  body.fun-mode .missing-row { border-color: #BDD5EA; }
+  body.fun-mode .missing-name { color: #0D1B2A; }
+  body.fun-mode .share-btn { background: #DCF0FF; border-color: #BDD5EA; color: #003DA5; }
+  body.fun-mode .stat-card { border-color: #BDD5EA; }
+  body.fun-mode .stat-value { color: #003DA5; }
+  body.fun-mode .stat-label { color: #5A7A96; }
+  body.fun-mode .stat-sub { color: #5A7A96; }
+  body.fun-mode .team-name { color: #0D1B2A; }
+  body.fun-mode .team-bar-bg { background: #C8E0F0; }
+  body.fun-mode .team-bar-fill { background: linear-gradient(90deg, #E8192C, #FFB800); }
+  body.fun-mode .team-pct { color: #5A7A96; }
+  body.fun-mode .btn-outline { border-color: #BDD5EA; color: #5A7A96; }
+  body.fun-mode .chip { background: #DCF0FF; border-color: #BDD5EA; color: #0D1B2A; }
+  body.fun-mode .chip-owned { border-color: #009A44; color: #007832; }
+  body.fun-mode .chip-missing { background: rgba(232,25,44,0.1); border-color: #E8192C; color: #CC0020; }
+  body.fun-mode .chip-unknown { border-color: #8AAAC0; color: #5A7A96; }
+  body.fun-mode .toast { background: #FFFFFF; border-color: #003DA5; color: #003DA5; }
+  body.fun-mode .modal { background: #FFFFFF; border-color: #BDD5EA; }
+  body.fun-mode .modal-title { color: #003DA5; }
+  body.fun-mode .modal-desc { color: #5A7A96; }
+  body.fun-mode .modal-input { background: #DCF0FF; border-color: #BDD5EA; color: #0D1B2A; }
+  body.fun-mode .user-modal-box { background: #FFFFFF; border-color: #003DA5; }
+  body.fun-mode .user-modal-title { color: #003DA5; }
+  body.fun-mode .user-modal-sub { color: #5A7A96; }
+  body.fun-mode .user-divider { border-color: #DCF0FF; }
+  body.fun-mode .loading-overlay { background: rgba(236,246,255,0.95); }
+  body.fun-mode .spinner { border-color: #BDD5EA; border-top-color: #003DA5; }
+  body.fun-mode .loading-text { color: #5A7A96; }
+  body.fun-mode .result-section-label { color: #5A7A96; }
+  body.fun-mode #user-modal { background: rgba(13,27,42,0.88); }
 </style>
 </head>
 <body>
@@ -613,13 +724,18 @@
       <img src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png" height="52" style="flex-shrink:0;width:auto;object-fit:contain;filter:drop-shadow(0 1px 6px rgba(0,0,0,.6))">
       <div>
         <div class="app-title">MUNDIAL 2026</div>
-        <div class="app-subtitle">Panini · Mi Colección <span style="opacity:0.5;font-size:9px;letter-spacing:0">v3.8</span></div>
+        <div class="app-subtitle">Panini · Mi Colección <span style="opacity:0.5;font-size:9px;letter-spacing:0">v3.9</span></div>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
+      <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="Cambiar modo visual">⚽</button>
       <span class="user-tag" id="user-tag" onclick="showUserModal()" title="Cambiar usuario">👤 <span id="user-tag-name">...</span></span>
       <div class="stats-pill" id="header-stats">0 / 0</div>
     </div>
+  </div>
+  <div class="mascot-strip">
+    <img src="https://upload.wikimedia.org/wikipedia/en/9/94/Maple-Zayu-Clutch_%28mascot%29.jpeg" alt="Maple, Zayu y Clutch">
+    <img src="icon-packet.webp" alt="Sobres Panini">
   </div>
   <div class="progress-wrap">
     <div class="progress-bar" id="progress-bar" style="width:0%"></div>
@@ -3107,9 +3223,31 @@ body{font-family:Arial,Helvetica,sans-serif;font-size:7pt;color:#111;background:
 }
 
 // ═══════════════════════════════════════════
+// TEMA
+// ═══════════════════════════════════════════
+let currentTheme = 'dark';
+
+function applyTheme(theme) {
+  currentTheme = theme;
+  if (theme === 'fun') {
+    document.body.classList.add('fun-mode');
+    document.getElementById('theme-btn').textContent = '🌙';
+  } else {
+    document.body.classList.remove('fun-mode');
+    document.getElementById('theme-btn').textContent = '⚽';
+  }
+  localStorage.setItem('album2026_theme', theme);
+}
+
+function toggleTheme() {
+  applyTheme(currentTheme === 'dark' ? 'fun' : 'dark');
+}
+
+// ═══════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════
 (async function init() {
+  applyTheme(localStorage.getItem('album2026_theme') || 'dark');
   try { sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) {}
   loadState();
   updateHeader();
