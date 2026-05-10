@@ -3152,6 +3152,8 @@ function clearAllRepes() {
   showToast('🗑️ Repetidas limpiadas');
 }
 
+function supN(n) { return String(n).split('').map(d=>'⁰¹²³⁴⁵⁶⁷⁸⁹'[d]).join(''); }
+
 function buildRepesBlocks() {
   const GROUPS = 'ABCDEFGHIJKL'.split('');
   const GC = ['#C8102E','#003DA5','#E8630A','#00843D','#7B2D8B','#00A3E0','#D4006C','#1A3A5C','#C49A00','#006B3F','#9B1D20','#5B2C6F'];
@@ -3174,7 +3176,7 @@ function buildRepesBlocks() {
     const boxes = repes.map(s => {
       const cnt = collection[s.code].count;
       const num = s.code.replace(k,'');
-      return `<span class="nb" title="${cnt} copias">${num}${cnt>2?`<sup style="font-size:4pt">x${cnt}</sup>`:''}</span>`;
+      return `<span class="nb" title="${cnt} copias">${num}${cnt>2?supN(cnt-1):''}</span>`;
     }).join('');
     blocks += `<div class="tb"><span class="tf">${FLAGS[k]||''}</span><span class="tn">${label}</span>${boxes}</div>`;
   });
@@ -3188,7 +3190,7 @@ function buildRepesBlocks() {
     const boxes = repes.map(s => {
       const cnt = collection[s.code].count;
       const num = s.code.replace(prefix,'');
-      return `<span class="nb">${num}${cnt>2?`<sup style="font-size:4pt">x${cnt}</sup>`:''}</span>`;
+      return `<span class="nb">${num}${cnt>2?supN(cnt-1):''}</span>`;
     }).join('');
     blocks += `<div class="gh" style="background:${gc}">${lbl}</div><div class="tb">${boxes}</div>`;
   });
