@@ -541,6 +541,21 @@
   .user-divider { border: none; border-top: 1px solid var(--surface2); margin: 4px 0 16px; }
   .user-tag { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px 3px 6px; font-size: 12px; color: var(--muted); cursor: pointer; }
   .user-tag:hover { border-color: var(--gold2); color: var(--gold); }
+  /* PIN modal */
+  #pin-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.92); z-index: 2100;
+    align-items: center; justify-content: center;
+  }
+  #pin-modal.show { display: flex; }
+  .pin-digits {
+    font-size: 32px; letter-spacing: 14px; text-align: center;
+    font-family: monospace; width: 100%; padding: 14px 8px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text); box-sizing: border-box;
+  }
+  .pin-digits:focus { outline: none; border-color: var(--gold2); }
+  .pin-error { color: #e74c3c; font-size: 12px; text-align: center; margin: 8px 0; }
 
   .modal-overlay {
     display: none;
@@ -720,6 +735,9 @@
   body.fun-mode .loading-text { color: #5A7A96; }
   body.fun-mode .result-section-label { color: #5A7A96; }
   body.fun-mode #user-modal { background: rgba(13,27,42,0.88); }
+  body.fun-mode #pin-modal { background: rgba(13,27,42,0.88); }
+  body.fun-mode .pin-digits { background: #F0F8FF; border-color: #BDD5EA; color: #003DA5; }
+  body.fun-mode .pin-digits:focus { border-color: #003DA5; }
 </style>
 </head>
 <body>
@@ -834,8 +852,23 @@
     <div class="user-modal-sub">MUNDIAL 2026 · MI ÁLBUM</div>
     <div class="user-btn-list" id="user-btn-list"><div style="color:var(--muted);font-size:13px;text-align:center;">Cargando...</div></div>
     <hr class="user-divider">
-    <input id="new-user-input" class="modal-input" placeholder="Nuevo usuario..." style="margin-bottom:8px;" onkeydown="if(event.key==='Enter')createUser()">
+    <input id="new-user-input" class="modal-input" placeholder="Nuevo usuario..." style="margin-bottom:8px;" onkeydown="if(event.key==='Enter')document.getElementById('new-user-pin').focus()">
+    <input id="new-user-pin" class="modal-input pin-digits" type="tel" inputmode="numeric" maxlength="4" pattern="[0-9]*" placeholder="· · · ·" style="margin-bottom:8px;" onkeydown="if(event.key==='Enter')createUser()">
     <button class="btn btn-gold" onclick="createUser()" style="width:100%;">+ Crear usuario</button>
+  </div>
+</div>
+
+<!-- PIN VERIFY MODAL -->
+<div id="pin-modal">
+  <div class="user-modal-box">
+    <div class="user-modal-title" id="pin-modal-title">🔒 PIN</div>
+    <div class="user-modal-sub">INGRESÁ TU PIN DE 4 DÍGITOS</div>
+    <input id="pin-input" class="pin-digits" type="tel" inputmode="numeric" maxlength="4" pattern="[0-9]*" placeholder="· · · ·" style="margin-bottom:8px;" onkeydown="if(event.key==='Enter')confirmPin()">
+    <div id="pin-error" class="pin-error" style="display:none;">PIN incorrecto. Intentá de nuevo.</div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="btn btn-outline" onclick="cancelPin()" style="flex:1;">Cancelar</button>
+      <button class="btn btn-gold" onclick="confirmPin()" style="flex:2;">Entrar</button>
+    </div>
   </div>
 </div>
 
@@ -2170,6 +2203,13 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 let sb = null;
 let currentUser = null;
 let saveTimer = null;
+let _pendingUser = null;
+let _pendingUserPinHash = null;
+
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
 
 function lsKey() { return currentUser ? `album2026_v4_${currentUser}` : 'album2026_v4'; }
 
@@ -2227,9 +2267,51 @@ async function showUserModal() {
 }
 
 async function selectUser(name) {
+  document.getElementById('user-modal').classList.remove('show');
+  _pendingUser = name;
+  let storedHash = null;
+  try {
+    const { data } = await sb.from('collections').select('pin_hash').eq('user_name', name).single();
+    storedHash = data?.pin_hash || null;
+  } catch(e) {}
+  if (!storedHash) {
+    await loadUser(name);
+    return;
+  }
+  _pendingUserPinHash = storedHash;
+  document.getElementById('pin-modal-title').textContent = `🔒 ${name}`;
+  document.getElementById('pin-input').value = '';
+  document.getElementById('pin-error').style.display = 'none';
+  document.getElementById('pin-modal').classList.add('show');
+  setTimeout(() => document.getElementById('pin-input').focus(), 100);
+}
+
+async function confirmPin() {
+  const val = document.getElementById('pin-input').value.trim();
+  if (val.length !== 4) return;
+  const hash = await sha256(val);
+  if (hash !== _pendingUserPinHash) {
+    document.getElementById('pin-error').style.display = 'block';
+    document.getElementById('pin-input').value = '';
+    return;
+  }
+  document.getElementById('pin-modal').classList.remove('show');
+  const name = _pendingUser;
+  _pendingUser = null;
+  _pendingUserPinHash = null;
+  await loadUser(name);
+}
+
+function cancelPin() {
+  document.getElementById('pin-modal').classList.remove('show');
+  _pendingUser = null;
+  _pendingUserPinHash = null;
+  showUserModal();
+}
+
+async function loadUser(name) {
   currentUser = name;
   localStorage.setItem('album2026_user', name);
-  document.getElementById('user-modal').classList.remove('show');
   document.getElementById('user-tag-name').textContent = name;
   setLoading(true);
   try {
@@ -2247,8 +2329,11 @@ async function selectUser(name) {
 
 async function createUser() {
   const name = document.getElementById('new-user-input').value.trim();
+  const pinRaw = document.getElementById('new-user-pin').value.trim();
   if (!name) return;
-  // Si no había usuario, migrar datos del key viejo
+  if (!/^\d{4}$/.test(pinRaw)) { showToast('❌ PIN debe tener 4 dígitos numéricos'); return; }
+  const pinHash = await sha256(pinRaw);
+  // Migrar datos del key viejo si no había usuario
   if (!localStorage.getItem('album2026_user')) {
     try {
       const old = localStorage.getItem('album2026_v4');
@@ -2257,9 +2342,14 @@ async function createUser() {
   }
   currentUser = name;
   localStorage.setItem('album2026_user', name);
+  localStorage.setItem(lsKey(), JSON.stringify(collection));
   document.getElementById('user-modal').classList.remove('show');
   document.getElementById('user-tag-name').textContent = name;
-  saveState();
+  if (sb) {
+    try {
+      await sb.from('collections').upsert({ user_name: name, data: collection, pin_hash: pinHash, updated_at: new Date().toISOString() });
+    } catch(e) {}
+  }
   updateHeader();
   renderCollection();
   showToast(`👤 ${name} creado`);
