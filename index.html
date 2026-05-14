@@ -862,12 +862,13 @@
 <div id="pin-modal">
   <div class="user-modal-box">
     <div class="user-modal-title" id="pin-modal-title">🔒 PIN</div>
-    <div class="user-modal-sub">INGRESÁ TU PIN DE 4 DÍGITOS</div>
+    <div class="user-modal-sub" id="pin-modal-sub">INGRESÁ TU PIN DE 4 DÍGITOS</div>
     <input id="pin-input" class="pin-digits" type="tel" inputmode="numeric" maxlength="4" pattern="[0-9]*" placeholder="· · · ·" style="margin-bottom:8px;" onkeydown="if(event.key==='Enter')confirmPin()">
-    <div id="pin-error" class="pin-error" style="display:none;">PIN incorrecto. Intentá de nuevo.</div>
+    <input id="pin-confirm-input" class="pin-digits" type="tel" inputmode="numeric" maxlength="4" pattern="[0-9]*" placeholder="Confirmá PIN" style="margin-bottom:8px;display:none;" onkeydown="if(event.key==='Enter')confirmPin()">
+    <div id="pin-error" class="pin-error" style="display:none;"></div>
     <div style="display:flex;gap:8px;margin-top:12px;">
       <button class="btn btn-outline" onclick="cancelPin()" style="flex:1;">Cancelar</button>
-      <button class="btn btn-gold" onclick="confirmPin()" style="flex:2;">Entrar</button>
+      <button class="btn btn-gold" id="pin-confirm-btn" onclick="confirmPin()" style="flex:2;">Entrar</button>
     </div>
   </div>
 </div>
@@ -2205,6 +2206,7 @@ let currentUser = null;
 let saveTimer = null;
 let _pendingUser = null;
 let _pendingUserPinHash = null;
+let _pinModalMode = 'verify'; // 'verify' | 'set'
 
 async function sha256(text) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
@@ -2266,6 +2268,27 @@ async function showUserModal() {
   }
 }
 
+function _openPinModal({ title, sub, mode, focusConfirm = false }) {
+  _pinModalMode = mode;
+  document.getElementById('pin-modal-title').textContent = title;
+  document.getElementById('pin-modal-sub').textContent = sub;
+  document.getElementById('pin-input').value = '';
+  document.getElementById('pin-error').style.display = 'none';
+  document.getElementById('pin-error').textContent = '';
+  const confirmInput = document.getElementById('pin-confirm-input');
+  const confirmBtn = document.getElementById('pin-confirm-btn');
+  if (mode === 'set') {
+    confirmInput.style.display = 'block';
+    confirmInput.value = '';
+    confirmBtn.textContent = 'Guardar PIN';
+  } else {
+    confirmInput.style.display = 'none';
+    confirmBtn.textContent = 'Entrar';
+  }
+  document.getElementById('pin-modal').classList.add('show');
+  setTimeout(() => document.getElementById('pin-input').focus(), 100);
+}
+
 async function selectUser(name) {
   document.getElementById('user-modal').classList.remove('show');
   _pendingUser = name;
@@ -2275,23 +2298,39 @@ async function selectUser(name) {
     storedHash = data?.pin_hash || null;
   } catch(e) {}
   if (!storedHash) {
-    await loadUser(name);
+    _openPinModal({ title: `🔑 ${name}`, sub: 'CREÁ UN PIN DE 4 DÍGITOS', mode: 'set' });
     return;
   }
   _pendingUserPinHash = storedHash;
-  document.getElementById('pin-modal-title').textContent = `🔒 ${name}`;
-  document.getElementById('pin-input').value = '';
-  document.getElementById('pin-error').style.display = 'none';
-  document.getElementById('pin-modal').classList.add('show');
-  setTimeout(() => document.getElementById('pin-input').focus(), 100);
+  _openPinModal({ title: `🔒 ${name}`, sub: 'INGRESÁ TU PIN DE 4 DÍGITOS', mode: 'verify' });
 }
 
 async function confirmPin() {
   const val = document.getElementById('pin-input').value.trim();
   if (val.length !== 4) return;
+  const errEl = document.getElementById('pin-error');
+
+  if (_pinModalMode === 'set') {
+    const confirm = document.getElementById('pin-confirm-input').value.trim();
+    if (confirm.length !== 4) { errEl.textContent = 'Confirmá el PIN.'; errEl.style.display = 'block'; return; }
+    if (val !== confirm) { errEl.textContent = 'Los PINs no coinciden.'; errEl.style.display = 'block'; document.getElementById('pin-confirm-input').value = ''; return; }
+    const hash = await sha256(val);
+    if (sb) {
+      try { await sb.from('collections').update({ pin_hash: hash }).eq('user_name', _pendingUser); } catch(e) {}
+    }
+    document.getElementById('pin-modal').classList.remove('show');
+    document.getElementById('pin-confirm-input').style.display = 'none';
+    const name = _pendingUser;
+    _pendingUser = null;
+    _pinModalMode = 'verify';
+    await loadUser(name);
+    return;
+  }
+
   const hash = await sha256(val);
   if (hash !== _pendingUserPinHash) {
-    document.getElementById('pin-error').style.display = 'block';
+    errEl.textContent = 'PIN incorrecto. Intentá de nuevo.';
+    errEl.style.display = 'block';
     document.getElementById('pin-input').value = '';
     return;
   }
@@ -2299,13 +2338,16 @@ async function confirmPin() {
   const name = _pendingUser;
   _pendingUser = null;
   _pendingUserPinHash = null;
+  _pinModalMode = 'verify';
   await loadUser(name);
 }
 
 function cancelPin() {
   document.getElementById('pin-modal').classList.remove('show');
+  document.getElementById('pin-confirm-input').style.display = 'none';
   _pendingUser = null;
   _pendingUserPinHash = null;
+  _pinModalMode = 'verify';
   showUserModal();
 }
 
