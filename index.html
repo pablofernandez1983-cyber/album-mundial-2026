@@ -2970,10 +2970,13 @@ function renderStats() {
   const totalTeams = teamKeys.length;
 
   const escudos = teamKeys.filter(k => {
-    const shield = ALBUM[k].stickers.find(s => s.name === 'Escudo');
-    return shield && collection[shield.code]?.owned;
+    const s = ALBUM[k].stickers.find(s => s.name === 'Escudo');
+    return s && collection[s.code]?.owned;
   }).length;
-
+  const fotosEquipo = teamKeys.filter(k => {
+    const s = ALBUM[k].stickers.find(s => s.name === 'Foto de equipo');
+    return s && collection[s.code]?.owned;
+  }).length;
   const completos = teamKeys.filter(k =>
     ALBUM[k].stickers.every(s => collection[s.code]?.owned)
   ).length;
@@ -2985,54 +2988,87 @@ function renderStats() {
     !ALBUM[k].stickers.some(s => collection[s.code]?.owned)
   ).length;
 
+  // Distribution buckets
+  const buckets = [
+    { label: '0%',     color: '#666',     teams: 0 },
+    { label: '1–33%',  color: '#4a9eff',  teams: 0 },
+    { label: '34–66%', color: '#f0a500',  teams: 0 },
+    { label: '67–99%', color: '#e67e22',  teams: 0 },
+    { label: '100%',   color: '#2ecc71',  teams: 0 },
+  ];
+  for (const k of teamKeys) {
+    const tot = ALBUM[k].stickers.length;
+    const own = ALBUM[k].stickers.filter(s => collection[s.code]?.owned).length;
+    const p = tot ? own / tot : 0;
+    if (p === 0)     buckets[0].teams++;
+    else if (p <= 0.33) buckets[1].teams++;
+    else if (p <= 0.66) buckets[2].teams++;
+    else if (p < 1)  buckets[3].teams++;
+    else             buckets[4].teams++;
+  }
+  const distBars = buckets.map(b => {
+    const w = totalTeams ? Math.round(b.teams / totalTeams * 100) : 0;
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <div style="font-size:11px;color:var(--muted);width:44px;text-align:right;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px">${b.label}</div>
+      <div style="flex:1;background:var(--border);border-radius:6px;height:18px;overflow:hidden;">
+        <div style="height:100%;width:${w}%;background:${b.color};border-radius:6px;transition:width .5s;"></div>
+      </div>
+      <div style="font-size:16px;font-family:'Bebas Neue',sans-serif;color:${b.color};width:20px;text-align:right">${b.teams}</div>
+    </div>`;
+  }).join('');
+
   let html = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-      <div class="stat-card">
+      <div class="stat-card" style="margin-bottom:0">
         <div class="stat-label">Tengo</div>
         <div class="stat-value">${owned}</div>
         <div class="stat-sub">${pct}% del álbum</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" style="margin-bottom:0">
         <div class="stat-label">Me faltan</div>
         <div class="stat-value" style="color:var(--red)">${missing}</div>
         <div class="stat-sub">de ${total} totales</div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-      <div class="stat-card">
-        <div class="stat-label">Repetidas</div>
-        <div class="stat-value" style="color:var(--blue)">${totalRepes}</div>
-        <div class="stat-sub">${dups} figurita${dups!==1?'s':''} con doble</div>
+    <div class="stat-card" style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
+        <div class="stat-label" style="margin-bottom:0">Progreso</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:40px;line-height:1;color:var(--gold)">${pct}%</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Progreso</div>
-        <div class="stat-value" style="font-size:36px">${pct}%</div>
-        <div class="stat-sub">completado</div>
+      <div style="background:var(--border);border-radius:8px;height:12px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--gold),#e8a000);border-radius:8px;transition:width .5s;"></div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-      <div class="stat-card">
-        <div class="stat-label">Escudos</div>
-        <div class="stat-value">${escudos}<span style="font-size:18px;color:var(--muted)">/${totalTeams}</span></div>
-        <div class="stat-sub">selecciones con escudo</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">
+      <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
+        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Escudos</div>
+        <div class="stat-value" style="font-size:28px">${escudos}<span style="font-size:13px;color:var(--muted)">/${totalTeams}</span></div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Completos</div>
-        <div class="stat-value" style="color:var(--gold)">${completos}</div>
-        <div class="stat-sub">equipos al 100%</div>
+      <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
+        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Fotos</div>
+        <div class="stat-value" style="font-size:28px">${fotosEquipo}<span style="font-size:13px;color:var(--muted)">/${totalTeams}</span></div>
+      </div>
+      <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
+        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Repetidas</div>
+        <div class="stat-value" style="font-size:28px;color:var(--blue)">${totalRepes}</div>
+        <div class="stat-sub" style="font-size:10px">${dups} con doble</div>
+      </div>
+      <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
+        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Completos</div>
+        <div class="stat-value" style="font-size:28px;color:#2ecc71">${completos}</div>
+      </div>
+      <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
+        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Empezados</div>
+        <div class="stat-value" style="font-size:28px;color:#4a9eff">${empezados}</div>
+      </div>
+      <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
+        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Sin empezar</div>
+        <div class="stat-value" style="font-size:28px;color:var(--muted)">${sinEmpezar}</div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-      <div class="stat-card">
-        <div class="stat-label">Empezados</div>
-        <div class="stat-value" style="color:var(--blue)">${empezados}</div>
-        <div class="stat-sub">equipos incompletos</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Sin empezar</div>
-        <div class="stat-value" style="color:var(--muted)">${sinEmpezar}</div>
-        <div class="stat-sub">equipos sin ninguna</div>
-      </div>
+    <div class="stat-card" style="margin-bottom:10px">
+      <div class="stat-label" style="margin-bottom:12px">Distribución de equipos</div>
+      ${distBars}
     </div>
     <div class="stat-card">
       <div class="stat-label" style="margin-bottom:12px">Por selección</div>
