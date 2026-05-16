@@ -2990,30 +2990,32 @@ function renderStats() {
 
   // Distribution buckets
   const buckets = [
-    { label: '0%',     color: '#666',     teams: 0 },
-    { label: '1–33%',  color: '#4a9eff',  teams: 0 },
-    { label: '34–66%', color: '#f0a500',  teams: 0 },
-    { label: '67–99%', color: '#e67e22',  teams: 0 },
-    { label: '100%',   color: '#2ecc71',  teams: 0 },
+    { label: '0%',     color: '#666',     teams: [] },
+    { label: '1–33%',  color: '#4a9eff',  teams: [] },
+    { label: '34–66%', color: '#f0a500',  teams: [] },
+    { label: '67–99%', color: '#e67e22',  teams: [] },
+    { label: '100%',   color: '#2ecc71',  teams: [] },
   ];
   for (const k of teamKeys) {
     const tot = ALBUM[k].stickers.length;
     const own = ALBUM[k].stickers.filter(s => collection[s.code]?.owned).length;
     const p = tot ? own / tot : 0;
-    if (p === 0)     buckets[0].teams++;
-    else if (p <= 0.33) buckets[1].teams++;
-    else if (p <= 0.66) buckets[2].teams++;
-    else if (p < 1)  buckets[3].teams++;
-    else             buckets[4].teams++;
+    if (p === 0)        buckets[0].teams.push(k);
+    else if (p <= 0.33) buckets[1].teams.push(k);
+    else if (p <= 0.66) buckets[2].teams.push(k);
+    else if (p < 1)     buckets[3].teams.push(k);
+    else                buckets[4].teams.push(k);
   }
-  const distBars = buckets.map(b => {
-    const w = totalTeams ? Math.round(b.teams / totalTeams * 100) : 0;
-    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+  window._distBuckets = buckets;
+  const distBars = buckets.map((b, i) => {
+    const cnt = b.teams.length;
+    const w = totalTeams ? Math.round(cnt / totalTeams * 100) : 0;
+    return `<div onclick="showDistTeams(${i})" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;cursor:pointer;">
       <div style="font-size:11px;color:var(--muted);width:44px;text-align:right;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px">${b.label}</div>
-      <div style="flex:1;background:var(--border);border-radius:6px;height:18px;overflow:hidden;">
+      <div style="flex:1;background:var(--border);border-radius:6px;height:28px;overflow:hidden;">
         <div style="height:100%;width:${w}%;background:${b.color};border-radius:6px;transition:width .5s;"></div>
       </div>
-      <div style="font-size:16px;font-family:'Bebas Neue',sans-serif;color:${b.color};width:20px;text-align:right">${b.teams}</div>
+      <div style="font-size:18px;font-family:'Bebas Neue',sans-serif;color:${b.color};width:22px;text-align:right">${cnt}</div>
     </div>`;
   }).join('');
 
@@ -3043,10 +3045,12 @@ function renderStats() {
       <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
         <div class="stat-label" style="font-size:10px;letter-spacing:1px">Escudos</div>
         <div class="stat-value" style="font-size:28px">${escudos}<span style="font-size:13px;color:var(--muted)">/${totalTeams}</span></div>
+        <div class="stat-sub" style="font-size:10px">${totalTeams ? Math.round(escudos/totalTeams*100) : 0}%</div>
       </div>
       <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
-        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Fotos</div>
+        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Equipo</div>
         <div class="stat-value" style="font-size:28px">${fotosEquipo}<span style="font-size:13px;color:var(--muted)">/${totalTeams}</span></div>
+        <div class="stat-sub" style="font-size:10px">${totalTeams ? Math.round(fotosEquipo/totalTeams*100) : 0}%</div>
       </div>
       <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
         <div class="stat-label" style="font-size:10px;letter-spacing:1px">Repetidas</div>
@@ -3069,6 +3073,7 @@ function renderStats() {
     <div class="stat-card" style="margin-bottom:10px">
       <div class="stat-label" style="margin-bottom:12px">Distribución de equipos</div>
       ${distBars}
+      <div id="dist-teams"></div>
     </div>
     <div class="stat-card">
       <div class="stat-label" style="margin-bottom:12px">Por selección</div>
@@ -3089,6 +3094,25 @@ function renderStats() {
   html += `</div></div>`;
   html += `<button class="btn btn-outline" style="margin-top:10px;color:var(--red);border-color:var(--red)" onclick="resetCollection()">🗑️ Resetear colección</button>`;
   container.innerHTML = html;
+}
+
+function showDistTeams(idx) {
+  const el = document.getElementById('dist-teams');
+  if (!el) return;
+  if (el.dataset.active === String(idx)) {
+    el.innerHTML = '';
+    el.dataset.active = '';
+    return;
+  }
+  el.dataset.active = String(idx);
+  const bucket = window._distBuckets[idx];
+  if (!bucket || !bucket.teams.length) { el.innerHTML = ''; return; }
+  const chips = bucket.teams.map(k => {
+    const own = ALBUM[k].stickers.filter(s => collection[s.code]?.owned).length;
+    const tot = ALBUM[k].stickers.length;
+    return `<span style="display:inline-block;padding:4px 8px;margin:3px 3px 0 0;border-radius:8px;border:1px solid ${bucket.color};color:${bucket.color};font-size:12px;font-family:'Barlow Condensed',sans-serif;">${ALBUM[k].label} <b>${own}/${tot}</b></span>`;
+  }).join('');
+  el.innerHTML = `<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">${chips}</div>`;
 }
 
 function resetCollection() {
