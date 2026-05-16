@@ -2532,6 +2532,36 @@ function buildCodeList() {
   return getAllStickers().map(s => `${s.code} (${s.name})`).join(', ');
 }
 
+function extractGeminiText(data, response) {
+  if (!response.ok || data.error) {
+    const err = data.error || {};
+    const status = err.code || response.status;
+    const msg = err.message || `HTTP ${response.status}`;
+    if (status === 429) throw new Error('Demasiadas fotos seguidas — esperá 1 minuto e intentá de nuevo');
+    if (status === 503 || status === 502) throw new Error('El servidor tardó en arrancar — volvé a intentar ahora mismo');
+    throw new Error(`Error de API [${status}]: ${msg}`);
+  }
+  const candidate = data.candidates?.[0];
+  if (!candidate) throw new Error('No se pudo leer la foto — sacala de nuevo con mejor luz');
+  const reason = candidate.finishReason;
+  if (reason === 'MAX_TOKENS') throw new Error('Hay demasiadas figuritas en la foto — intentá con una sección más chica');
+  if (reason && reason !== 'STOP') throw new Error('La IA no pudo procesar la imagen — intentá con mejor luz o ángulo');
+  const text = candidate.content?.parts?.[0]?.text;
+  if (!text) throw new Error('No se pudo leer la foto — sacala de nuevo');
+  return text;
+}
+
+function parseGeminiJSON(raw) {
+  const cleaned = raw.replace(/```(?:json)?\n?/g, '').trim();
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('No se pudo leer la foto — sacala de nuevo con mejor luz o ángulo');
+  try {
+    return JSON.parse(match[0]);
+  } catch(e) {
+    throw new Error('No se pudo leer la foto — sacala de nuevo con mejor luz o ángulo');
+  }
+}
+
 async function analyzeImage() {
   if (!currentImageBase64) return;
 
@@ -2603,20 +2633,8 @@ SOLO códigos del equipo identificado en el PASO 1. Arrays pueden estar vacíos 
     );
 
     const data = await response.json();
-
-    if (data.error || !response.ok) {
-      const err = data.error || {};
-      const status = err.code || response.status;
-      const msg = err.message || `HTTP ${response.status}`;
-      console.error('Gemini error:', status, data);
-      if (status === 429) throw new Error('Rate limit: esperá 1 minuto e intentá de nuevo');
-      throw new Error(`[${status}] ${msg}`);
-    }
-
-    const raw = data.candidates[0].content.parts[0].text;
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('La IA no devolvió JSON válido — intentá de nuevo');
-    const result = JSON.parse(jsonMatch[0]);
+    const raw = extractGeminiText(data, response);
+    const result = parseGeminiJSON(raw);
 
     const validCodes = new Set(getAllStickers().map(s => s.code));
     pendingOwned = (result.owned || []).filter(c => validCodes.has(c));
@@ -3259,15 +3277,12 @@ Si no ves ningún código claro, devolvé {"detected": []}.`;
             { inlineData: { mimeType: currentRepeMime, data: currentRepeImage } },
             { text: prompt }
           ]}],
-          generationConfig: { maxOutputTokens: 1000, temperature: 0 }
+          generationConfig: { maxOutputTokens: 2000, temperature: 0 }
         })
       });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || 'Error API');
-    const raw = data.candidates[0].content.parts[0].text;
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('La IA no devolvió JSON válido');
-    const result = JSON.parse(match[0]);
+    const raw = extractGeminiText(data, response);
+    const result = parseGeminiJSON(raw);
     const detected = (result.detected || []).map(c => c.replace(/\s/g, '').toUpperCase());
     pendingRepes = detected;
     showRepesResult(detected);
@@ -3355,15 +3370,12 @@ Si no ves ningún código claro, devolvé {"detected": []}.`;
           { inlineData: { mimeType: currentBaseMime, data: currentBaseImage } },
           { text: prompt }
         ]}],
-        generationConfig: { maxOutputTokens: 1000, temperature: 0 }
+        generationConfig: { maxOutputTokens: 2000, temperature: 0 }
       })
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || 'Error API');
-    const raw = data.candidates[0].content.parts[0].text;
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('La IA no devolvió JSON válido');
-    const result = JSON.parse(match[0]);
+    const raw = extractGeminiText(data, response);
+    const result = parseGeminiJSON(raw);
     const detected = (result.detected || []).map(c => c.replace(/\s/g, '').toUpperCase());
     pendingBases = [...new Set(detected)]; // sin duplicados — cada código se pega una vez
     showBasesResult(detected);
