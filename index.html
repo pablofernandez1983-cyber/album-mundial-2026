@@ -2988,6 +2988,15 @@ function renderStats() {
     !ALBUM[k].stickers.some(s => collection[s.code]?.owned)
   ).length;
 
+  const ccOwned    = ALBUM['CC'].stickers.filter(s => collection[s.code]?.owned).length;
+  const ccTotal    = ALBUM['CC'].stickers.length;
+  const fwcOwned   = ALBUM['INTRO'].stickers.filter(s => collection[s.code]?.owned).length;
+  const fwcTotal   = ALBUM['INTRO'].stickers.length;
+  const pnOwned    = ALBUM['PANINI'].stickers.filter(s => collection[s.code]?.owned).length;
+  const pnTotal    = ALBUM['PANINI'].stickers.length;
+  const spOwned    = ccOwned + fwcOwned + pnOwned;
+  const spTotal    = ccTotal + fwcTotal + pnTotal;
+
   // Distribution buckets (8 ranges)
   const buckets = [
     { label: '0%',      color: '#555',    teams: [] },
@@ -3025,16 +3034,21 @@ function renderStats() {
   }).join('');
 
   let html = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-      <div class="stat-card" style="margin-bottom:0">
-        <div class="stat-label">Tengo</div>
-        <div class="stat-value">${owned}</div>
-        <div class="stat-sub">${pct}% del álbum</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+      <div class="stat-card" style="margin-bottom:0;padding:12px 10px;">
+        <div class="stat-label" style="font-size:10px">Tengo</div>
+        <div class="stat-value" style="font-size:36px">${owned}</div>
+        <div class="stat-sub">${pct}%</div>
       </div>
-      <div class="stat-card" style="margin-bottom:0">
-        <div class="stat-label">Me faltan</div>
-        <div class="stat-value" style="color:var(--red)">${missing}</div>
-        <div class="stat-sub">de ${total} totales</div>
+      <div class="stat-card" style="margin-bottom:0;padding:12px 10px;">
+        <div class="stat-label" style="font-size:10px">Me faltan</div>
+        <div class="stat-value" style="font-size:36px;color:var(--red)">${missing}</div>
+        <div class="stat-sub">de ${total}</div>
+      </div>
+      <div class="stat-card" style="margin-bottom:0;padding:12px 10px;">
+        <div class="stat-label" style="font-size:10px">Repetidas</div>
+        <div class="stat-value" style="font-size:36px;color:var(--blue)">${totalRepes}</div>
+        <div class="stat-sub">${dups} con doble</div>
       </div>
     </div>
     <div class="stat-card" style="margin-bottom:10px">
@@ -3058,9 +3072,9 @@ function renderStats() {
         <div class="stat-sub" style="font-size:10px">${totalTeams ? Math.round(fotosEquipo/totalTeams*100) : 0}%</div>
       </div>
       <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
-        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Repetidas</div>
-        <div class="stat-value" style="font-size:28px;color:var(--blue)">${totalRepes}</div>
-        <div class="stat-sub" style="font-size:10px">${dups} con doble</div>
+        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Especiales</div>
+        <div class="stat-value" style="font-size:28px">${spOwned}<span style="font-size:13px;color:var(--muted)">/${spTotal}</span></div>
+        <div class="stat-sub" style="font-size:10px">CC ${ccOwned} · FWC ${fwcOwned} · PN ${pnOwned}</div>
       </div>
       <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
         <div class="stat-label" style="font-size:10px;letter-spacing:1px">Completos</div>
