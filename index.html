@@ -2988,30 +2988,35 @@ function renderStats() {
     !ALBUM[k].stickers.some(s => collection[s.code]?.owned)
   ).length;
 
-  // Distribution buckets
+  // Distribution buckets (8 ranges)
   const buckets = [
-    { label: '0%',     color: '#666',     teams: [] },
-    { label: '1–33%',  color: '#4a9eff',  teams: [] },
-    { label: '34–66%', color: '#f0a500',  teams: [] },
-    { label: '67–99%', color: '#e67e22',  teams: [] },
-    { label: '100%',   color: '#2ecc71',  teams: [] },
+    { label: '0%',      color: '#555',    teams: [] },
+    { label: '1–15%',   color: '#e74c3c', teams: [] },
+    { label: '16–30%',  color: '#e67e22', teams: [] },
+    { label: '31–45%',  color: '#f39c12', teams: [] },
+    { label: '46–60%',  color: '#f1c40f', teams: [] },
+    { label: '61–75%',  color: '#8bc34a', teams: [] },
+    { label: '76–99%',  color: '#2ecc71', teams: [] },
+    { label: '100%',    color: '#f0a500', teams: [] },
   ];
   for (const k of teamKeys) {
     const tot = ALBUM[k].stickers.length;
     const own = ALBUM[k].stickers.filter(s => collection[s.code]?.owned).length;
     const p = tot ? own / tot : 0;
     if (p === 0)        buckets[0].teams.push(k);
-    else if (p <= 0.33) buckets[1].teams.push(k);
-    else if (p <= 0.66) buckets[2].teams.push(k);
-    else if (p < 1)     buckets[3].teams.push(k);
-    else                buckets[4].teams.push(k);
+    else if (p <= 0.15) buckets[1].teams.push(k);
+    else if (p <= 0.30) buckets[2].teams.push(k);
+    else if (p <= 0.45) buckets[3].teams.push(k);
+    else if (p <= 0.60) buckets[4].teams.push(k);
+    else if (p <= 0.75) buckets[5].teams.push(k);
+    else if (p < 1)     buckets[6].teams.push(k);
+    else                buckets[7].teams.push(k);
   }
-  window._distBuckets = buckets;
   const distBars = buckets.map((b, i) => {
     const cnt = b.teams.length;
     const w = totalTeams ? Math.round(cnt / totalTeams * 100) : 0;
-    return `<div onclick="showDistTeams(${i})" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;cursor:pointer;">
-      <div style="font-size:11px;color:var(--muted);width:44px;text-align:right;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px">${b.label}</div>
+    return `<div class="dist-bar-row" data-active="" onclick="showDistTeams(${i})" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;cursor:pointer;transition:opacity .2s;">
+      <div style="font-size:11px;color:var(--muted);width:48px;text-align:right;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px">${b.label}</div>
       <div style="flex:1;background:var(--border);border-radius:6px;height:28px;overflow:hidden;">
         <div style="height:100%;width:${w}%;background:${b.color};border-radius:6px;transition:width .5s;"></div>
       </div>
@@ -3073,20 +3078,24 @@ function renderStats() {
     <div class="stat-card" style="margin-bottom:10px">
       <div class="stat-label" style="margin-bottom:12px">Distribución de equipos</div>
       ${distBars}
-      <div id="dist-teams"></div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label" style="margin-bottom:12px">Por selección</div>
+    <div class="stat-card" id="dist-team-section">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div class="stat-label" style="margin-bottom:0">Por selección</div>
+        <span id="dist-filter-badge" style="display:none;font-size:11px;color:var(--gold);font-family:'Barlow Condensed',sans-serif;cursor:pointer;" onclick="showDistTeams(-1)">✕ Quitar filtro</span>
+      </div>
       <div class="team-stats">`;
 
   for (const teamCode of teamKeys) {
     const team = ALBUM[teamCode];
     const tot = team.stickers.length;
     const own = team.stickers.filter(s => collection[s.code]?.owned).length;
-    const p = Math.round(own/tot*100);
-    html += `<div class="team-row">
+    const pct2 = Math.round(own/tot*100);
+    const ratio = tot ? own/tot : 0;
+    const bi = ratio===0?0:ratio<=0.15?1:ratio<=0.30?2:ratio<=0.45?3:ratio<=0.60?4:ratio<=0.75?5:ratio<1?6:7;
+    html += `<div class="team-row" data-bucket="${bi}">
       <div class="team-name">${team.label}</div>
-      <div class="team-bar-bg"><div class="team-bar-fill" style="width:${p}%"></div></div>
+      <div class="team-bar-bg"><div class="team-bar-fill" style="width:${pct2}%"></div></div>
       <div class="team-pct">${own}/${tot}</div>
     </div>`;
   }
@@ -3097,22 +3106,26 @@ function renderStats() {
 }
 
 function showDistTeams(idx) {
-  const el = document.getElementById('dist-teams');
-  if (!el) return;
-  if (el.dataset.active === String(idx)) {
-    el.innerHTML = '';
-    el.dataset.active = '';
-    return;
+  const rows = document.querySelectorAll('.team-row[data-bucket]');
+  const bars = document.querySelectorAll('.dist-bar-row');
+  const badge = document.getElementById('dist-filter-badge');
+  const isActive = idx >= 0 && bars[idx]?.dataset.active === '1';
+
+  if (isActive || idx < 0) {
+    bars.forEach(b => { b.dataset.active = ''; b.style.opacity = '1'; });
+    rows.forEach(r => r.style.display = '');
+    if (badge) badge.style.display = 'none';
+  } else {
+    bars.forEach((b, i) => {
+      b.dataset.active = i === idx ? '1' : '';
+      b.style.opacity = i === idx ? '1' : '0.35';
+    });
+    rows.forEach(r => {
+      r.style.display = r.dataset.bucket === String(idx) ? '' : 'none';
+    });
+    if (badge) badge.style.display = '';
+    document.getElementById('dist-team-section')?.scrollIntoView({behavior:'smooth', block:'start'});
   }
-  el.dataset.active = String(idx);
-  const bucket = window._distBuckets[idx];
-  if (!bucket || !bucket.teams.length) { el.innerHTML = ''; return; }
-  const chips = bucket.teams.map(k => {
-    const own = ALBUM[k].stickers.filter(s => collection[s.code]?.owned).length;
-    const tot = ALBUM[k].stickers.length;
-    return `<span style="display:inline-block;padding:4px 8px;margin:3px 3px 0 0;border-radius:8px;border:1px solid ${bucket.color};color:${bucket.color};font-size:12px;font-family:'Barlow Condensed',sans-serif;">${ALBUM[k].label} <b>${own}/${tot}</b></span>`;
-  }).join('');
-  el.innerHTML = `<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">${chips}</div>`;
 }
 
 function resetCollection() {
