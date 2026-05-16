@@ -874,6 +874,7 @@
 
 <!-- PANEL: REPETIDAS -->
 <div class="panel" id="panel-repes">
+  <!-- ESCANEAR REPETIDAS -->
   <div class="scan-area" onclick="document.getElementById('file-input-repes').click()">
     <div class="scan-icon">🔁</div>
     <div class="scan-label">Foto del dorso de tus repes</div>
@@ -891,12 +892,39 @@
     <div class="sticker-chips" id="repes-chips" style="margin-top:8px; margin-bottom:12px;"></div>
     <button class="btn btn-gold apply-btn" onclick="applyRepes()">✅ Agregar a mis repetidas</button>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;">
+
+  <!-- ESCANEAR BASES (ya pegadas) -->
+  <div style="display:flex;align-items:center;gap:8px;margin:16px 0 12px;">
+    <div style="flex:1;height:1px;background:var(--border);"></div>
+    <span style="font-size:11px;color:var(--muted);white-space:nowrap;">o marcá como pegadas</span>
+    <div style="flex:1;height:1px;background:var(--border);"></div>
+  </div>
+  <div class="scan-area" onclick="document.getElementById('file-input-bases').click()">
+    <div class="scan-icon">🏷️</div>
+    <div class="scan-label">Foto de bases (dorso ya pegado)</div>
+    <div class="scan-hint">Detecta los códigos y las marca como pegadas</div>
+  </div>
+  <input type="file" id="file-input-bases" accept="image/*" capture="environment" style="display:none">
+  <img id="preview-bases" style="display:none; border-radius:14px; width:100%; margin-top:12px;">
+  <div id="rotate-btns-bases" style="display:none; margin-top:8px; gap:8px; flex-direction:row;">
+    <button class="btn btn-outline" style="flex:1;" onclick="rotateBase(1)">↻ Rotar</button>
+    <button class="btn btn-outline" style="flex:1;" onclick="rotateBase(-1)">↺ Rotar</button>
+  </div>
+  <button class="btn btn-gold" id="analyze-bases-btn" disabled onclick="analyzeBase()">🔍 Detectar y Marcar Pegadas</button>
+  <div id="bases-result" style="display:none; margin-top:16px;">
+    <div class="section-header">Detectadas <span class="section-count" id="bases-count-label"></span></div>
+    <div class="sticker-chips" id="bases-chips" style="margin-top:8px; margin-bottom:12px;"></div>
+    <button class="btn btn-gold apply-btn" onclick="applyBases()">✅ Marcar como pegadas</button>
+  </div>
+
+  <!-- ACCIONES Y LISTA -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:16px;">
     <button class="btn btn-outline" onclick="printRepes(false)">🖨️ Imprimir</button>
     <button class="btn btn-outline" onclick="printRepes(true)">📥 PDF</button>
     <button class="btn btn-outline" style="color:var(--red);" onclick="clearAllRepes()">🗑️ Limpiar</button>
   </div>
-  <div id="repes-list" style="margin-top:16px;"></div>
+  <input id="repes-search" class="modal-input" placeholder="🔍 Buscar figurita..." style="margin-top:12px;margin-bottom:0;" oninput="renderRepes()">
+  <div id="repes-list" style="margin-top:12px;"></div>
 </div>
 
 <!-- PANEL: STATS -->
@@ -3006,6 +3034,9 @@ function resetCollection() {
 let currentRepeImage = null;
 let currentRepeMime = 'image/jpeg';
 let pendingRepes = [];
+let currentBaseImage = null;
+let currentBaseMime = 'image/jpeg';
+let pendingBases = [];
 
 // Migrar datos viejos de album2026_repeats_v1 a collection.count
 (function migrateRepeats() {
@@ -3123,6 +3154,135 @@ Si no ves ningún código claro, devolvé {"detected": []}.`;
   }
 }
 
+// ── BASES (dorsos ya pegados) ──────────────────────────────────────────────
+
+document.getElementById('file-input-bases').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const tmpImg = new Image();
+    tmpImg.onload = () => {
+      const MAX = 1600;
+      let w = tmpImg.naturalWidth, h = tmpImg.naturalHeight;
+      if (w > MAX || h > MAX) {
+        const ratio = Math.min(MAX/w, MAX/h);
+        w = Math.round(w*ratio); h = Math.round(h*ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(tmpImg, 0, 0, w, h);
+      const norm = canvas.toDataURL('image/jpeg', 0.85);
+      currentBaseMime = 'image/jpeg';
+      currentBaseImage = norm.split(',')[1];
+      document.getElementById('preview-bases').src = norm;
+      document.getElementById('preview-bases').style.display = 'block';
+      document.getElementById('rotate-btns-bases').style.display = 'flex';
+      document.getElementById('analyze-bases-btn').disabled = false;
+      document.getElementById('bases-result').style.display = 'none';
+    };
+    tmpImg.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+});
+
+function rotateBase(dir) {
+  if (!currentBaseImage) return;
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.height; canvas.height = img.width;
+    const ctx = canvas.getContext('2d');
+    ctx.translate(canvas.width/2, canvas.height/2);
+    ctx.rotate(dir * Math.PI/2);
+    ctx.drawImage(img, -img.width/2, -img.height/2);
+    const rotated = canvas.toDataURL('image/jpeg', 0.85);
+    currentBaseImage = rotated.split(',')[1];
+    document.getElementById('preview-bases').src = rotated;
+  };
+  img.src = 'data:image/jpeg;base64,' + currentBaseImage;
+}
+
+async function analyzeBase() {
+  if (!currentBaseImage) return;
+  setLoading(true);
+  const codeList = buildCodeList();
+  const prompt = `Sos un experto en álbumes Panini del Mundial 2026.
+
+Esta es una foto de la parte de ATRÁS de figuritas (bases o dorsos, ya sea sueltas o pegadas).
+Cada figurita tiene su código impreso claramente (ej: "ARG 7", "MEX 3", "BRA 11").
+
+Leé TODOS los códigos visibles en la foto. Si el mismo código aparece más de una vez, inclúyelo repetido.
+
+Los códigos válidos son: ${codeList}
+
+Respondé SOLO con JSON, sin texto extra:
+{"detected": ["ARG7", "MEX3"]}
+
+Si no ves ningún código claro, devolvé {"detected": []}.`;
+
+  try {
+    const response = await fetch(`${PROXY_URL}/gemini`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [
+          { inlineData: { mimeType: currentBaseMime, data: currentBaseImage } },
+          { text: prompt }
+        ]}],
+        generationConfig: { maxOutputTokens: 1000, temperature: 0 }
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error?.message || 'Error API');
+    const raw = data.candidates[0].content.parts[0].text;
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('La IA no devolvió JSON válido');
+    const result = JSON.parse(match[0]);
+    const detected = (result.detected || []).map(c => c.replace(/\s/g, '').toUpperCase());
+    pendingBases = [...new Set(detected)]; // sin duplicados — cada código se pega una vez
+    showBasesResult(detected);
+  } catch(err) {
+    showToast('❌ Error: ' + err.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+function showBasesResult(detected) {
+  const allStickers = getAllStickers();
+  const lookup = {};
+  allStickers.forEach(s => lookup[s.code] = s.name);
+  const unique = [...new Set(detected)];
+  const label = document.getElementById('bases-count-label');
+  label.textContent = unique.length;
+  let html = '';
+  for (const code of unique) {
+    const name = lookup[code] || code;
+    const yaOwned = collection[code]?.owned;
+    html += `<span class="sticker-chip${yaOwned ? ' chip-owned' : ''}" title="${name}">${code}${yaOwned ? ' ✓' : ''}</span>`;
+  }
+  document.getElementById('bases-chips').innerHTML = html || '<span style="color:var(--muted)">No se detectó ningún código</span>';
+  document.getElementById('bases-result').style.display = 'block';
+}
+
+function applyBases() {
+  let nuevas = 0;
+  pendingBases.forEach(code => {
+    if (!collection[code]?.owned) {
+      collection[code] = { owned: true, count: 1 };
+      nuevas++;
+    }
+  });
+  saveState();
+  updateHeader();
+  renderCollection();
+  pendingBases = [];
+  document.getElementById('bases-result').style.display = 'none';
+  showToast(`✅ ${nuevas} figurita${nuevas !== 1 ? 's' : ''} marcada${nuevas !== 1 ? 's' : ''} como pegada${nuevas !== 1 ? 's' : ''}`);
+}
+
 function showRepesResult(detected) {
   const allStickers = getAllStickers();
   const lookup = {};
@@ -3165,7 +3325,13 @@ function removeRepe(code) {
 function renderRepes() {
   const container = document.getElementById('repes-list');
   const allStickers = getAllStickers();
-  const repeEntries = Object.entries(collection).filter(([,v]) => v.owned && (v.count||1) > 1);
+  const q = (document.getElementById('repes-search')?.value || '').toLowerCase().trim();
+  const repeEntries = Object.entries(collection).filter(([code, v]) => {
+    if (!v.owned || (v.count||1) <= 1) return false;
+    if (!q) return true;
+    const s = allStickers.find(x => x.code === code);
+    return code.toLowerCase().includes(q) || (s?.name || '').toLowerCase().includes(q) || (s?.teamLabel || '').toLowerCase().includes(q);
+  });
   const total = repeEntries.reduce((a,[,v]) => a + ((v.count||1) - 1), 0);
   if (!repeEntries.length) {
     container.innerHTML = `<div class="empty-state"><div class="empty-icon">🔁</div><div class="empty-text">Sin repetidas aún</div></div>`;
