@@ -814,6 +814,30 @@
       </button>
     </div>
   </div>
+
+  <!-- ESCANEAR BASES (ya pegadas) -->
+  <div style="display:flex;align-items:center;gap:8px;margin:16px 0 12px;">
+    <div style="flex:1;height:1px;background:var(--border);"></div>
+    <span style="font-size:11px;color:var(--muted);white-space:nowrap;">o marcá como pegadas</span>
+    <div style="flex:1;height:1px;background:var(--border);"></div>
+  </div>
+  <div class="scan-area" onclick="document.getElementById('file-input-bases').click()">
+    <div class="scan-icon">🏷️</div>
+    <div class="scan-label">Foto de bases (dorso ya pegado)</div>
+    <div class="scan-hint">Detecta los códigos y las marca como pegadas</div>
+  </div>
+  <input type="file" id="file-input-bases" accept="image/*" capture="environment" style="display:none">
+  <img id="preview-bases" style="display:none; border-radius:14px; width:100%; margin-top:12px;">
+  <div id="rotate-btns-bases" style="display:none; margin-top:8px; gap:8px; flex-direction:row;">
+    <button class="btn btn-outline" style="flex:1;" onclick="rotateBase(1)">↻ Rotar</button>
+    <button class="btn btn-outline" style="flex:1;" onclick="rotateBase(-1)">↺ Rotar</button>
+  </div>
+  <button class="btn btn-gold" id="analyze-bases-btn" disabled onclick="analyzeBase()">🔍 Detectar y Marcar Pegadas</button>
+  <div id="bases-result" style="display:none; margin-top:16px;">
+    <div class="section-header">Detectadas <span class="section-count" id="bases-count-label"></span></div>
+    <div class="sticker-chips" id="bases-chips" style="margin-top:8px; margin-bottom:12px;"></div>
+    <button class="btn btn-gold apply-btn" onclick="applyBases()">✅ Marcar como pegadas</button>
+  </div>
 </div>
 
 <!-- PANEL: COLECCIÓN -->
@@ -891,30 +915,6 @@
     <div class="section-header">Detectadas <span class="section-count" id="repes-count-label"></span></div>
     <div class="sticker-chips" id="repes-chips" style="margin-top:8px; margin-bottom:12px;"></div>
     <button class="btn btn-gold apply-btn" onclick="applyRepes()">✅ Agregar a mis repetidas</button>
-  </div>
-
-  <!-- ESCANEAR BASES (ya pegadas) -->
-  <div style="display:flex;align-items:center;gap:8px;margin:16px 0 12px;">
-    <div style="flex:1;height:1px;background:var(--border);"></div>
-    <span style="font-size:11px;color:var(--muted);white-space:nowrap;">o marcá como pegadas</span>
-    <div style="flex:1;height:1px;background:var(--border);"></div>
-  </div>
-  <div class="scan-area" onclick="document.getElementById('file-input-bases').click()">
-    <div class="scan-icon">🏷️</div>
-    <div class="scan-label">Foto de bases (dorso ya pegado)</div>
-    <div class="scan-hint">Detecta los códigos y las marca como pegadas</div>
-  </div>
-  <input type="file" id="file-input-bases" accept="image/*" capture="environment" style="display:none">
-  <img id="preview-bases" style="display:none; border-radius:14px; width:100%; margin-top:12px;">
-  <div id="rotate-btns-bases" style="display:none; margin-top:8px; gap:8px; flex-direction:row;">
-    <button class="btn btn-outline" style="flex:1;" onclick="rotateBase(1)">↻ Rotar</button>
-    <button class="btn btn-outline" style="flex:1;" onclick="rotateBase(-1)">↺ Rotar</button>
-  </div>
-  <button class="btn btn-gold" id="analyze-bases-btn" disabled onclick="analyzeBase()">🔍 Detectar y Marcar Pegadas</button>
-  <div id="bases-result" style="display:none; margin-top:16px;">
-    <div class="section-header">Detectadas <span class="section-count" id="bases-count-label"></span></div>
-    <div class="sticker-chips" id="bases-chips" style="margin-top:8px; margin-bottom:12px;"></div>
-    <button class="btn btn-gold apply-btn" onclick="applyBases()">✅ Marcar como pegadas</button>
   </div>
 
   <!-- ACCIONES Y LISTA -->
