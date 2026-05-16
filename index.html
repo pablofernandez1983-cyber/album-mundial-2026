@@ -2724,66 +2724,61 @@ function renderCollection() {
   let firstMatchId = null;
   let groupIdx = -1;
 
-  const allEntries = Object.entries(ALBUM);
-
-  for (const [teamCode, team] of allEntries) {
-    const isTeam = teamKeys.includes(teamCode);
-    const teamPos = isTeam ? teamKeys.indexOf(teamCode) : -1;
-    const curGroup = isTeam ? Math.floor(teamPos / 4) : -1;
-
-    let stickers = team.stickers;
-
-    const teamMatches = !query ||
-      team.label.toLowerCase().includes(query) ||
-      teamCode.toLowerCase().includes(query);
-
-    if (query) {
-      stickers = stickers.filter(s =>
-        teamMatches ||
-        s.code.toLowerCase().includes(query) ||
-        s.name.toLowerCase().includes(query)
-      );
-    }
-
-    if (currentFilter === 'owned')
-      stickers = stickers.filter(s => collection[s.code]?.owned);
-    else if (currentFilter === 'missing')
-      stickers = stickers.filter(s => !collection[s.code]?.owned);
-    else if (currentFilter === 'duplicate')
-      stickers = stickers.filter(s => (collection[s.code]?.count || 0) > 1);
-
-    if (!stickers.length) continue;
-
-    // Group separator (only for team sections, not INTRO/CC/PANINI)
-    if (isTeam && curGroup !== groupIdx) {
-      groupIdx = curGroup;
-      const sepLabel = `Grupo ${GROUPS[curGroup]}`;
-      html += `<div class="group-sep" id="group-${GROUPS[curGroup]}"><span>${sepLabel}</span></div>`;
-    }
-
-    const id = `team-${teamCode}`;
+  function renderSection(id, label, allStickersFull, filteredStickers) {
+    if (!filteredStickers.length) return '';
     if (!firstMatchId && query) firstMatchId = id;
-    const ownedInTeam = team.stickers.filter(s => collection[s.code]?.owned).length;
-
-    html += `<div class="section-header" id="${id}">
-      ${team.label}
-      <span class="section-count">${ownedInTeam}/${team.stickers.length}</span>
-    </div>
-    <div class="sticker-grid">`;
-
-    for (const s of stickers) {
+    const ownedInSection = allStickersFull.filter(s => collection[s.code]?.owned).length;
+    let out = `<div class="section-header" id="${id}">${label}<span class="section-count">${ownedInSection}/${allStickersFull.length}</span></div><div class="sticker-grid">`;
+    for (const s of filteredStickers) {
       const c = collection[s.code];
       const owned = c?.owned;
       const count = c?.count || 0;
       const dup = count > 1;
-      html += `<div class="sticker-card ${owned ? (dup?'duplicate':'owned') : ''}" onclick="toggleSticker('${s.code}')">
+      out += `<div class="sticker-card ${owned ? (dup?'duplicate':'owned') : ''}" onclick="toggleSticker('${s.code}')">
         ${dup ? `<div class="dup-badge">x${count}</div>` : ''}
         <div class="sticker-code">${s.code}</div>
         <div class="sticker-name">${s.name}</div>
       </div>`;
     }
-    html += '</div>';
+    return out + '</div>';
   }
+
+  function applyFilters(stickers, label, code) {
+    const sectionMatches = !query || label.toLowerCase().includes(query) || code.toLowerCase().includes(query);
+    let s = stickers;
+    if (query) s = s.filter(x => sectionMatches || x.code.toLowerCase().includes(query) || x.name.toLowerCase().includes(query));
+    if (currentFilter === 'owned') s = s.filter(x => collection[x.code]?.owned);
+    else if (currentFilter === 'missing') s = s.filter(x => !collection[x.code]?.owned);
+    else if (currentFilter === 'duplicate') s = s.filter(x => (collection[x.code]?.count || 0) > 1);
+    return s;
+  }
+
+  // FWC 1-8 (Introducción) al inicio
+  const fwc1_8 = ALBUM['INTRO'].stickers.filter(s => parseInt(s.code.replace('FWC','')) <= 8);
+  html += renderSection('team-INTRO', 'Introducción', fwc1_8, applyFilters(fwc1_8, 'Introducción', 'INTRO'));
+
+  // Equipos por grupo
+  for (const teamCode of teamKeys) {
+    const team = ALBUM[teamCode];
+    const teamPos = teamKeys.indexOf(teamCode);
+    const curGroup = Math.floor(teamPos / 4);
+    if (curGroup !== groupIdx) {
+      groupIdx = curGroup;
+      html += `<div class="group-sep" id="group-${GROUPS[curGroup]}"><span>Grupo ${GROUPS[curGroup]}</span></div>`;
+    }
+    html += renderSection(`team-${teamCode}`, team.label, team.stickers, applyFilters(team.stickers, team.label, teamCode));
+  }
+
+  // CC y Panini
+  for (const special of ['CC', 'PANINI']) {
+    if (!ALBUM[special]) continue;
+    const t = ALBUM[special];
+    html += renderSection(`team-${special}`, t.label, t.stickers, applyFilters(t.stickers, t.label, special));
+  }
+
+  // FWC 9-19 (Historia) al final
+  const fwc9_19 = ALBUM['INTRO'].stickers.filter(s => parseInt(s.code.replace('FWC','')) >= 9);
+  html += renderSection('team-INTRO-historia', 'Historia del Mundial', fwc9_19, applyFilters(fwc9_19, 'Historia del Mundial', 'FWC'));
 
   if (!html) {
     html = `<div class="empty-state">
@@ -2966,7 +2961,29 @@ function renderStats() {
   const owned = ownedCount();
   const missing = total - owned;
   const pct = total ? Math.round(owned/total*100) : 0;
-  const dups = getAllStickers().filter(s => (collection[s.code]?.count || 0) > 1).length;
+  const allS = getAllStickers();
+  const dups = allS.filter(s => (collection[s.code]?.count || 0) > 1).length;
+  const totalRepes = Object.values(collection).reduce((a,v) => a + (v.owned && (v.count||1) > 1 ? (v.count-1) : 0), 0);
+
+  const SPECIALS = ['INTRO','CC','PANINI'];
+  const teamKeys = Object.keys(ALBUM).filter(k => !SPECIALS.includes(k));
+  const totalTeams = teamKeys.length;
+
+  const escudos = teamKeys.filter(k => {
+    const shield = ALBUM[k].stickers.find(s => s.name === 'Escudo');
+    return shield && collection[shield.code]?.owned;
+  }).length;
+
+  const completos = teamKeys.filter(k =>
+    ALBUM[k].stickers.every(s => collection[s.code]?.owned)
+  ).length;
+  const empezados = teamKeys.filter(k => {
+    const own = ALBUM[k].stickers.filter(s => collection[s.code]?.owned).length;
+    return own > 0 && own < ALBUM[k].stickers.length;
+  }).length;
+  const sinEmpezar = teamKeys.filter(k =>
+    !ALBUM[k].stickers.some(s => collection[s.code]?.owned)
+  ).length;
 
   let html = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
@@ -2981,11 +2998,11 @@ function renderStats() {
         <div class="stat-sub">de ${total} totales</div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
       <div class="stat-card">
-        <div class="stat-label">Dobles</div>
-        <div class="stat-value" style="color:var(--blue)">${dups}</div>
-        <div class="stat-sub">para intercambio</div>
+        <div class="stat-label">Repetidas</div>
+        <div class="stat-value" style="color:var(--blue)">${totalRepes}</div>
+        <div class="stat-sub">${dups} figurita${dups!==1?'s':''} con doble</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Progreso</div>
@@ -2993,28 +3010,48 @@ function renderStats() {
         <div class="stat-sub">completado</div>
       </div>
     </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div class="stat-card">
+        <div class="stat-label">Escudos</div>
+        <div class="stat-value">${escudos}<span style="font-size:18px;color:var(--muted)">/${totalTeams}</span></div>
+        <div class="stat-sub">selecciones con escudo</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Completos</div>
+        <div class="stat-value" style="color:var(--gold)">${completos}</div>
+        <div class="stat-sub">equipos al 100%</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div class="stat-card">
+        <div class="stat-label">Empezados</div>
+        <div class="stat-value" style="color:var(--blue)">${empezados}</div>
+        <div class="stat-sub">equipos incompletos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Sin empezar</div>
+        <div class="stat-value" style="color:var(--muted)">${sinEmpezar}</div>
+        <div class="stat-sub">equipos sin ninguna</div>
+      </div>
+    </div>
     <div class="stat-card">
       <div class="stat-label" style="margin-bottom:12px">Por selección</div>
       <div class="team-stats">`;
 
-  for (const [teamCode, team] of Object.entries(ALBUM)) {
+  for (const teamCode of teamKeys) {
+    const team = ALBUM[teamCode];
     const tot = team.stickers.length;
     const own = team.stickers.filter(s => collection[s.code]?.owned).length;
     const p = Math.round(own/tot*100);
     html += `<div class="team-row">
       <div class="team-name">${team.label}</div>
       <div class="team-bar-bg"><div class="team-bar-fill" style="width:${p}%"></div></div>
-      <div class="team-pct">${p}%</div>
+      <div class="team-pct">${own}/${tot}</div>
     </div>`;
   }
 
   html += `</div></div>`;
-
-  // Botón reset
-  html += `<button class="btn btn-outline" style="margin-top:10px;color:var(--red);border-color:var(--red)" onclick="resetCollection()">
-    🗑️ Resetear colección
-  </button>`;
-
+  html += `<button class="btn btn-outline" style="margin-top:10px;color:var(--red);border-color:var(--red)" onclick="resetCollection()">🗑️ Resetear colección</button>`;
   container.innerHTML = html;
 }
 
