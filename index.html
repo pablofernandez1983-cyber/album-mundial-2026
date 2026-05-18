@@ -2891,7 +2891,7 @@ function printReport(sortAlpha, download=false) {
     const nums = missingNums(key);
     if (!nums.length) return '';
     const label = ALBUM[key].label.replace('Bosnia y Herzegovina','Bosnia').replace('Estados Unidos','EE.UU.');
-    return `<div class="tb"><span class="tf">${FLAGS[key]||''}</span><span class="tn">${label}:</span><span class="tnums">${nums.join('-')}</span></div>`;
+    return `<div class="tb"><span class="tf">${FLAGS[key]||''}</span><span class="tn">${label}:</span><span class="tnums">${nums.join(' - ')}</span></div>`;
   }
 
   if (sortAlpha) {
@@ -2918,7 +2918,7 @@ function printReport(sortAlpha, download=false) {
   function specialBlock(key, prefix, label, color) {
     const nums = missingNums(key, prefix);
     if (!nums.length) return '';
-    return `<div class="gh" style="background:${color}">${label}</div><div class="tb"><span class="tnums">${nums.join('-')}</span></div>`;
+    return `<div class="gh" style="background:${color}">${label}</div><div class="tb"><span class="tnums">${nums.join(' - ')}</span></div>`;
   }
 
   blocks += specialBlock('INTRO','FWC','Introducción (FWC)','#555');
@@ -3563,7 +3563,7 @@ function buildRepesBlocks() {
       const cnt = collection[s.code].count;
       const num = s.code.replace(k,'');
       return cnt > 2 ? `${num}×${cnt-1}` : num;
-    }).join('-');
+    }).join(' - ');
     blocks += `<div class="tb"><span class="tf">${FLAGS[k]||''}</span><span class="tn">${label}:</span><span class="tnums">${nums}</span></div>`;
   });
 
@@ -3577,7 +3577,7 @@ function buildRepesBlocks() {
       const cnt = collection[s.code].count;
       const num = s.code.replace(prefix,'');
       return cnt > 2 ? `${num}×${cnt-1}` : num;
-    }).join('-');
+    }).join(' - ');
     blocks += `<div class="gh" style="background:${gc}">${lbl}</div><div class="tb"><span class="tnums">${nums}</span></div>`;
   });
   return blocks;
@@ -3587,7 +3587,7 @@ function pdfCss(nbColor) {
   return `@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&display=swap');
 @page{size:A4 portrait;margin:6mm}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Barlow Condensed',Arial Narrow,sans-serif;font-size:10pt;color:#111;background:#fff}
+body{font-family:'Barlow Condensed',Arial Narrow,sans-serif;font-size:11pt;color:#111;background:#fff}
 .hdr{padding:3mm 4mm;display:flex;align-items:center;gap:4mm;margin-bottom:3mm;border-radius:2mm}
 .hdr-logo{height:16mm;width:auto;flex-shrink:0;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
 .hdr-mid{flex:1;min-width:0}
@@ -3603,8 +3603,8 @@ body{font-family:'Barlow Condensed',Arial Narrow,sans-serif;font-size:10pt;color
 .gh{color:#fff;font-weight:900;font-size:7pt;text-transform:uppercase;padding:1.5pt 4pt;letter-spacing:1px;margin:3pt 0 1.5pt;break-inside:avoid;page-break-inside:avoid}
 .tb{margin-bottom:3pt;break-inside:avoid;page-break-inside:avoid;line-height:1.4;font-size:10pt}
 .tf{font-size:10pt}
-.tn{font-weight:700;font-size:10pt}
-.tnums{font-size:10pt;color:#333;font-weight:600}
+.tn{font-weight:700;font-size:11pt}
+.tnums{font-size:11pt;color:#333;font-weight:600}
 .sec-title{font-family:Impact,'Arial Black',sans-serif;font-size:11pt;font-weight:900;color:#003DA5;text-transform:uppercase;letter-spacing:1px;border-bottom:1.5pt solid #003DA5;padding-bottom:1mm;margin:4mm 0 2mm}`;
 }
 
@@ -3694,13 +3694,13 @@ function printCombined(download=false) {
       const nums = missingNums(key);
       if (!nums.length) return '';
       const label = ALBUM[key].label.replace('Bosnia y Herzegovina','Bosnia').replace('Estados Unidos','EE.UU.');
-      return `<div class="tb"><span class="tf">${FLAGS[key]||''}</span><span class="tn">${label}:</span><span class="tnums">${nums.join('-')}</span></div>`;
+      return `<div class="tb"><span class="tf">${FLAGS[key]||''}</span><span class="tn">${label}:</span><span class="tnums">${nums.join(' - ')}</span></div>`;
     }
     let b = '';
     teamKeys.forEach((k,i) => { if (i%4===0){const g=GROUPS[i/4],gc=GC[i/4];b+=`<div class="gh" style="background:${gc}">GRUPO ${g}</div>`;} b+=teamBlock(k); });
     function specialBlock(key, prefix, label, color) {
       const nums = missingNums(key, prefix); if (!nums.length) return '';
-      return `<div class="gh" style="background:${color}">${label}</div><div class="tb"><span class="tnums">${nums.join('-')}</span></div>`;
+      return `<div class="gh" style="background:${color}">${label}</div><div class="tb"><span class="tnums">${nums.join(' - ')}</span></div>`;
     }
     b += specialBlock('INTRO','FWC','Introducción (FWC)','#555');
     b += specialBlock('CC','CC','Coca-Cola (CC)','#E8192C');
