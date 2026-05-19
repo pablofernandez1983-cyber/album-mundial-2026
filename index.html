@@ -2906,7 +2906,7 @@ function printReport(sortAlpha, download=false) {
     });
     [['INTRO','FWC','Intro'],['CC','CC','Coca-Cola'],['PANINI','PANINI','Panini']].forEach(([key,prefix,lbl]) => {
       const nums = missingNums(key, prefix);
-      if (nums.length) { items.push({ header: true, label: lbl }); items.push({ key: '', label: lbl, group: '·', nums }); }
+      if (nums.length) items.push({ key: lbl, label: lbl, group: '·', nums });
     });
   }
 
