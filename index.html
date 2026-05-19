@@ -2896,14 +2896,12 @@ function printReport(sortAlpha, download=false) {
       if (nums.length) items.push({ label: lbl, flag: '', group: grp, nums });
     });
   } else {
-    // Por grupo: orden original (A→L), con separador de grupo
+    // Por grupo: orden original (A→L), tag [X] inline en lugar de header de sección
     items = [];
-    let lastGrp = null;
     teamKeys.forEach((k,i) => {
       const nums = missingNums(k);
       if (!nums.length) return;
       const grp = GROUPS[Math.floor(i/4)];
-      if (grp !== lastGrp) { items.push({ header: true, label: 'Grupo ' + grp }); lastGrp = grp; }
       items.push({ label: ALBUM[k].label.replace('Bosnia y Herzegovina','Bosnia').replace('Estados Unidos','EE.UU.'), flag: FLAGS[k]||'', group: grp, nums });
     });
     [['INTRO','FWC','Intro'],['CC','CC','Coca-Cola'],['PANINI','PANINI','Panini']].forEach(([key,prefix,lbl]) => {
@@ -2954,7 +2952,7 @@ function printReport(sortAlpha, download=false) {
   const sep = ' ';
   function renderItem(item) {
     if (item.header) return '<div class="gh">' + item.label + '</div>';
-    const grpTag = sortAlpha ? ' <span class="grp">[' + item.group + ']</span>' : '';
+    const grpTag = item.group && item.group !== '·' ? ' <span class="grp">[' + item.group + ']</span>' : '';
     return '<div class="tb">' + item.flag + '<span class="tn"> ' + item.label + grpTag + ':</span> <span class="tnums">' + item.nums.join(sep) + '</span></div>';
   }
 
