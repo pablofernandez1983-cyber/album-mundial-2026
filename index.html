@@ -2918,7 +2918,7 @@ function printReport(sortAlpha, download=false) {
   const userLine = currentUser || 'Sin usuario';
 
   // Dynamic font: busca el pt más grande que entra en ~220mm de contenido (A4 menos header ~25mm)
-  const NUM_COLS = 4;
+  const NUM_COLS = 3;
   const teamItems = items.filter(t => !t.header);
   const n = teamItems.length;
   const rowsPerCol = n > 0 ? Math.ceil(items.length / NUM_COLS) : 1; // items incluye headers
