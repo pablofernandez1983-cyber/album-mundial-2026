@@ -3307,25 +3307,26 @@ function rotateRepe(dir) {
 async function analyzeRepes() {
   if (!currentRepeImage) return;
   setLoading(true);
-  const codeList = buildCodeList();
   const prompt = `Sos un experto en álbumes Panini del Mundial 2026.
 
 Esta es una foto de la parte de ATRÁS de figuritas sueltas (repetidas/dobles).
 Cada figurita tiene su código impreso claramente (ej: "ARG 7", "MEX 3", "BRA 11").
+Los códigos son 2-3 letras mayúsculas seguidas de un número (1-20), o prefijos especiales: FWC, CC, PANINI.
 
 Leé TODOS los códigos visibles en la foto. Si el mismo código aparece más de una vez, inclúyelo repetido en el array.
-
-Los códigos válidos son: ${codeList}
 
 Respondé SOLO con JSON, sin texto extra:
 {"detected": ["ARG7", "MEX3", "ARG7"]}
 
 Si no ves ningún código claro, devolvé {"detected": []}.`;
 
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 100000);
   try {
     const response = await fetch(`${PROXY_URL}/gemini`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: ctrl.signal,
         body: JSON.stringify({
           contents: [{ parts: [
             { inlineData: { mimeType: currentRepeMime, data: currentRepeImage } },
@@ -3341,8 +3342,10 @@ Si no ves ningún código claro, devolvé {"detected": []}.`;
     pendingRepes = detected;
     showRepesResult(detected);
   } catch(err) {
-    showToast('❌ ' + err.message);
+    const msg = err.name === 'AbortError' ? 'Tiempo agotado (>100s). Intentá con menos figuritas o mejor conexión.' : 'Error de red. El servidor puede estar iniciando — esperá 30s y reintentá.';
+    showToast('❌ ' + msg);
   } finally {
+    clearTimeout(tid);
     setLoading(false);
   }
 }
@@ -3415,10 +3418,13 @@ Respondé SOLO con JSON, sin texto extra:
 
 Si no ves ningún código claro, devolvé {"detected": []}.`;
 
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 100000);
   try {
     const response = await fetch(`${PROXY_URL}/gemini`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: ctrl.signal,
       body: JSON.stringify({
         contents: [{ parts: [
           { inlineData: { mimeType: currentBaseMime, data: currentBaseImage } },
@@ -3431,11 +3437,13 @@ Si no ves ningún código claro, devolvé {"detected": []}.`;
     const raw = extractGeminiText(data, response);
     const result = parseGeminiJSON(raw);
     const detected = (result.detected || []).map(c => c.replace(/\s/g, '').toUpperCase());
-    pendingBases = [...new Set(detected)]; // sin duplicados — cada código se pega una vez
+    pendingBases = [...new Set(detected)];
     showBasesResult(detected);
   } catch(err) {
-    showToast('❌ Error: ' + err.message);
+    const msg = err.name === 'AbortError' ? 'Tiempo agotado (>100s). Intentá con menos figuritas o mejor conexión.' : 'Error de red. El servidor puede estar iniciando — esperá 30s y reintentá.';
+    showToast('❌ ' + msg);
   } finally {
+    clearTimeout(tid);
     setLoading(false);
   }
 }
