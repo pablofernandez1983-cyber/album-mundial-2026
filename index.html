@@ -2939,6 +2939,18 @@ function printReport(sortAlpha, download=false) {
   const perCol = Math.ceil(items.length / colCount);
   const columns = Array.from({length: colCount}, (_, i) => items.slice(i*perCol, (i+1)*perCol)).filter(c => c.length);
 
+  // Fix orphaned headers: if a column ends with a header (no items follow), move it to the next column
+  for (let i = 0; i < columns.length - 1; i++) {
+    while (columns[i].length > 0 && columns[i][columns[i].length - 1].header) {
+      columns[i + 1].unshift(columns[i].pop());
+    }
+  }
+  // Drop last column if it contains only a lone header
+  if (columns.length > 0) {
+    const last = columns[columns.length - 1];
+    if (last.length === 1 && last[0].header) columns.pop();
+  }
+
   const sep = ' ';
   function renderItem(item) {
     if (item.header) return '<div class="gh">' + item.label + '</div>';
