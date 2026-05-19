@@ -2888,12 +2888,12 @@ function printReport(sortAlpha, download=false) {
   let items;
   if (sortAlpha) {
     items = teamKeys
-      .map(k => ({ label: ALBUM[k].label.replace('Bosnia y Herzegovina','Bosnia').replace('Estados Unidos','EE.UU.'), flag: FLAGS[k]||'', group: groupOf[k], nums: missingNums(k) }))
+      .map(k => ({ key: k, label: ALBUM[k].label.replace('Bosnia y Herzegovina','Bosnia').replace('Estados Unidos','EE.UU.'), group: groupOf[k], nums: missingNums(k) }))
       .filter(t => t.nums.length > 0)
       .sort((a, b) => a.label.localeCompare(b.label, 'es'));
     [['INTRO','FWC','Intro','·'],['CC','CC','Coca-Cola','·'],['PANINI','PANINI','Panini','·']].forEach(([key,prefix,lbl,grp]) => {
       const nums = missingNums(key, prefix);
-      if (nums.length) items.push({ label: lbl, flag: '', group: grp, nums });
+      if (nums.length) items.push({ key: '', label: lbl, group: grp, nums });
     });
   } else {
     // Por grupo: orden original (A→L), tag [X] inline en lugar de header de sección
@@ -2902,11 +2902,11 @@ function printReport(sortAlpha, download=false) {
       const nums = missingNums(k);
       if (!nums.length) return;
       const grp = GROUPS[Math.floor(i/4)];
-      items.push({ label: ALBUM[k].label.replace('Bosnia y Herzegovina','Bosnia').replace('Estados Unidos','EE.UU.'), flag: FLAGS[k]||'', group: grp, nums });
+      items.push({ key: k, label: ALBUM[k].label.replace('Bosnia y Herzegovina','Bosnia').replace('Estados Unidos','EE.UU.'), group: grp, nums });
     });
     [['INTRO','FWC','Intro'],['CC','CC','Coca-Cola'],['PANINI','PANINI','Panini']].forEach(([key,prefix,lbl]) => {
       const nums = missingNums(key, prefix);
-      if (nums.length) { items.push({ header: true, label: lbl }); items.push({ label: lbl, flag: '', group: '·', nums }); }
+      if (nums.length) { items.push({ header: true, label: lbl }); items.push({ key: '', label: lbl, group: '·', nums }); }
     });
   }
 
@@ -2953,7 +2953,8 @@ function printReport(sortAlpha, download=false) {
   function renderItem(item) {
     if (item.header) return '<div class="gh">' + item.label + '</div>';
     const grpTag = item.group && item.group !== '·' ? ' <span class="grp">[' + item.group + ']</span>' : '';
-    return '<div class="tb">' + item.flag + '<span class="tn"> ' + item.label + grpTag + ':</span> <span class="tnums">' + item.nums.join(sep) + '</span></div>';
+    const codeTag = item.key ? '<span class="tcode">' + item.key + '</span> ' : '';
+    return '<div class="tb">' + codeTag + '<span class="tn">' + item.label + grpTag + ':</span> <span class="tnums">' + item.nums.join(sep) + '</span></div>';
   }
 
   const colsHtml = columns.map(col => '<div class="col">' + col.map(renderItem).join('') + '</div>').join('');
@@ -2977,6 +2978,7 @@ function printReport(sortAlpha, download=false) {
     + '.cols-wrap{display:flex;gap:3mm;align-items:flex-start}'
     + '.col{flex:1 1 0;min-width:0}'
     + '.tb{margin-bottom:' + rowGapPt + 'pt;line-height:1.35}'
+    + '.tcode{font-weight:700;color:#888;font-size:' + grpSize + 'pt;letter-spacing:0.3px}'
     + '.tn{font-weight:700}'
     + '.grp{font-weight:400;font-size:' + grpSize + 'pt;color:#888}'
     + '.tnums{color:#333;font-weight:600}'
