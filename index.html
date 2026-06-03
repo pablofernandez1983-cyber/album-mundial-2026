@@ -979,11 +979,11 @@
   <div id="team-celeb-card">
     <button onclick="closeTeamCelebration()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:rgba(255,255,255,.4);font-size:24px;cursor:pointer;line-height:1;padding:0;">✕</button>
     <div id="team-celeb-stars"></div>
-    <div style="font-size:56px;line-height:1;margin-bottom:10px;">🎉</div>
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:4px;color:#f0a500;text-transform:uppercase;margin-bottom:6px;">¡Equipo completo!</div>
+    <div id="team-celeb-emoji" style="font-size:56px;line-height:1;margin-bottom:10px;">🎉</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:4px;color:rgba(255,255,255,.6);text-transform:uppercase;margin-bottom:6px;">¡Equipo completo!</div>
     <div id="team-celeb-name" style="font-family:'Bebas Neue',Impact,sans-serif;font-size:40px;color:#FFE066;letter-spacing:2px;line-height:1;margin-bottom:14px;"></div>
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;color:rgba(255,255,255,.7);line-height:1.5;margin-bottom:24px;">Pegaste todas las figuritas<br>de este equipo. ¡Excelente! 🌟</div>
-    <button onclick="closeTeamCelebration()" style="background:linear-gradient(135deg,#f0a500,#e8a000);color:#111;border:none;border-radius:12px;padding:12px 0;font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:2px;cursor:pointer;width:100%;box-shadow:0 4px 16px rgba(240,165,0,.4);">¡DALE! 👊</button>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;color:rgba(255,255,255,.75);line-height:1.5;margin-bottom:24px;">Pegaste todas las figuritas<br>de este equipo. ¡Excelente! 🌟</div>
+    <button id="team-celeb-btn" onclick="closeTeamCelebration()" style="background:rgba(255,255,255,.15);backdrop-filter:blur(4px);color:#fff;border:2px solid rgba(255,255,255,.4);border-radius:12px;padding:12px 0;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;cursor:pointer;width:100%;">¡DALE! 👊</button>
   </div>
 </div>
 
@@ -4107,16 +4107,69 @@ function toggleTheme() {
 // ═══════════════════════════════════════════
 // CELEBRATIONS
 // ═══════════════════════════════════════════
+// __celebV2: nueva clave para que todos vean el rediseño con colores de bandera
 function getCelebratedTeamSet() {
-  return new Set(collection.__celebrated || []);
+  return new Set(collection.__celebV2 || []);
 }
 function markTeamCelebrated(k) {
-  if (!collection.__celebrated) collection.__celebrated = [];
-  if (!collection.__celebrated.includes(k)) {
-    collection.__celebrated.push(k);
+  if (!collection.__celebV2) collection.__celebV2 = [];
+  if (!collection.__celebV2.includes(k)) {
+    collection.__celebV2.push(k);
     saveState();
   }
 }
+
+const TEAM_CELEB = {
+  ARG: { bg:['#1a5c8a','#2e86c1'], word:'¡Vamos!',     flag:'🇦🇷' },
+  BRA: { bg:['#006400','#228b22'], word:'¡Goool!',      flag:'🇧🇷' },
+  GER: { bg:['#1a1a1a','#cc0000'], word:'Tor!',         flag:'🇩🇪' },
+  FRA: { bg:['#00237a','#b81c1c'], word:'Allez!',       flag:'🇫🇷' },
+  ESP: { bg:['#9a1015','#c41e25'], word:'¡Olé!',        flag:'🇪🇸' },
+  ENG: { bg:['#8a0000','#cc0000'], word:'Come on!',     flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+  POR: { bg:['#006600','#880000'], word:'Força!',        flag:'🇵🇹' },
+  MEX: { bg:['#006847','#8a0e1a'], word:'¡Ándale!',     flag:'🇲🇽' },
+  NED: { bg:['#ae1c28','#c85a00'], word:'Oranje!',      flag:'🇳🇱' },
+  BEL: { bg:['#1a1a1a','#a80000'], word:'Allez!',       flag:'🇧🇪' },
+  CRO: { bg:['#aa0000','#00008a'], word:'Hajdemo!',     flag:'🇭🇷' },
+  URU: { bg:['#001489','#002a99'], word:'¡Charrúa!',    flag:'🇺🇾' },
+  COL: { bg:['#8a6500','#003087'], word:'¡Bacano!',     flag:'🇨🇴' },
+  SEN: { bg:['#005c2b','#006b33'], word:'Teranga!',     flag:'🇸🇳' },
+  MAR: { bg:['#9a1a20','#006233'], word:'Yallah!',      flag:'🇲🇦' },
+  JPN: { bg:['#8a001c','#bc002d'], word:'Gambatte!',    flag:'🇯🇵' },
+  KOR: { bg:['#8a1e28','#004090'], word:'Hwaiting!',    flag:'🇰🇷' },
+  AUS: { bg:['#00006b','#8a0e1a'], word:'Aussie!',      flag:'🇦🇺' },
+  USA: { bg:['#2c2b60','#8a1a22'], word:"Let's go!",   flag:'🇺🇸' },
+  CAN: { bg:['#8a0000','#cc0000'], word:'¡Eh sí!',      flag:'🇨🇦' },
+  SUI: { bg:['#8a0000','#aa0000'], word:'Hopp Schwiiz!',flag:'🇨🇭' },
+  QAT: { bg:['#6a0e2c','#8d153a'], word:'Yallah!',     flag:'🇶🇦' },
+  RSA: { bg:['#005c38','#8a6000'], word:'Ayoba!',       flag:'🇿🇦' },
+  GHA: { bg:['#005030','#8a6500'], word:'Ghana!',       flag:'🇬🇭' },
+  NOR: { bg:['#8a1a1e','#002060'], word:'Heia!',        flag:'🇳🇴' },
+  SWE: { bg:['#004e7a','#006aa7'], word:'Heja!',        flag:'🇸🇪' },
+  IRN: { bg:['#1a7030','#8a0000'], word:'Zendeh bad!',  flag:'🇮🇷' },
+  NZL: { bg:['#001a66','#8a0e1a'], word:'Ka pai!',      flag:'🇳🇿' },
+  TUR: { bg:['#8a0600','#c01010'], word:'Hadi!',        flag:'🇹🇷' },
+  ECU: { bg:['#7a5000','#003087'], word:'¡Ecuador!',    flag:'🇪🇨' },
+  PAR: { bg:['#8a1a10','#003090'], word:'¡Ñande!',      flag:'🇵🇾' },
+  PAN: { bg:['#8a0c10','#002a90'], word:'¡Dique!',      flag:'🇵🇦' },
+  CIV: { bg:['#8a4a00','#005a28'], word:'Éléphants!',   flag:'🇨🇮' },
+  TUN: { bg:['#8a0008','#aa0010'], word:'Ezzawali!',    flag:'🇹🇳' },
+  EGY: { bg:['#8a0a14','#1a1a1a'], word:'Yallah Masr!',flag:'🇪🇬' },
+  ALG: { bg:['#004020','#005528'], word:'Dzayer!',      flag:'🇩🇿' },
+  IRQ: { bg:['#8a0a14','#005020'], word:'Yallah!',      flag:'🇮🇶' },
+  JOR: { bg:['#005020','#8a0a14'], word:'Yallah!',      flag:'🇯🇴' },
+  KSA: { bg:['#004a20','#006635'], word:'Hayyakum!',    flag:'🇸🇦' },
+  CPV: { bg:['#002880','#8a1520'], word:'Morabeza!',    flag:'🇨🇻' },
+  BIH: { bg:['#001a80','#8a6500'], word:'Hajmo!',       flag:'🇧🇦' },
+  CZE: { bg:['#8a0e10','#0e3a70'], word:'Pojďme!',      flag:'🇨🇿' },
+  SCO: { bg:['#002880','#003399'], word:"C'mon!",       flag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
+  CUW: { bg:['#001a70','#002880'], word:'Dushi!',       flag:'🇨🇼' },
+  HAI: { bg:['#001880','#8a0a1e'], word:'Ayibobo!',     flag:'🇭🇹' },
+  AUT: { bg:['#8a1218','#aa1820'], word:"Auf geht's!",  flag:'🇦🇹' },
+  UZB: { bg:['#1a7030','#8a0a14'], word:'Oldinga!',     flag:'🇺🇿' },
+  COD: { bg:['#005aaa','#8a6500'], word:'Mbote!',       flag:'🇨🇩' },
+  _default: { bg:['#1c1c2e','#0f3460'], word:'¡Genial!', flag:'🎉' },
+};
 
 function getCompleteTeamSet() {
   return new Set(
@@ -4146,19 +4199,28 @@ function _createStars(containerId, count) {
   }
 }
 
-function showTeamCelebration(label) {
-  _celebQueue.push(label);
+function showTeamCelebration(code) {
+  _celebQueue.push(code);
   if (!_celebShowing) _processNextCelebration();
 }
 
 function _processNextCelebration() {
   if (!_celebQueue.length) { _celebShowing = false; return; }
   _celebShowing = true;
-  const label = _celebQueue.shift();
+  const code = _celebQueue.shift();
+  const label = ALBUM[code]?.label || code;
+  const theme = TEAM_CELEB[code] || TEAM_CELEB._default;
+
   document.getElementById('team-celeb-name').textContent = label;
+  document.getElementById('team-celeb-emoji').textContent = theme.flag;
+  document.getElementById('team-celeb-btn').textContent = theme.word;
+
   const card = document.getElementById('team-celeb-card');
+  card.style.background = `linear-gradient(160deg, ${theme.bg[0]} 0%, ${theme.bg[1]} 100%)`;
+  card.style.borderColor = 'rgba(255,255,255,.3)';
   card.style.animation = 'none';
   requestAnimationFrame(() => { card.style.animation = ''; });
+
   document.getElementById('team-celebration-modal').style.display = 'flex';
   _createStars('team-celeb-stars', 10);
 }
@@ -4183,10 +4245,10 @@ function checkAndCelebrate(prevCompleteSet) {
       markTeamCelebrated(k);
     }
   }
-  newlyComplete.forEach(k => showTeamCelebration(ALBUM[k].label));
+  newlyComplete.forEach(k => showTeamCelebration(k));
   const allComplete = teamKeys.every(k => ALBUM[k].stickers.every(s => collection[s.code]?.owned));
-  if (allComplete && !collection.__albumCelebrated) {
-    collection.__albumCelebrated = true;
+  if (allComplete && !collection.__albumCelebV2) {
+    collection.__albumCelebV2 = true;
     saveState();
     setTimeout(() => showAlbumCelebration(), 400);
   }
@@ -4200,11 +4262,7 @@ function checkFirstLoadCelebrations() {
   );
   if (!unseen.length) return;
   unseen.forEach(k => markTeamCelebrated(k));
-  if (unseen.length <= 3) {
-    unseen.forEach(k => setTimeout(() => showTeamCelebration(ALBUM[k].label), 1400));
-  } else {
-    setTimeout(() => showTeamCelebration(unseen.length + ' equipos'), 1400);
-  }
+  setTimeout(() => unseen.forEach(k => showTeamCelebration(k)), 1400);
 }
 
 // INIT
