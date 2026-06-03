@@ -617,6 +617,26 @@
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
 
+  #celebration-banner {
+    position: fixed;
+    top: 18px; left: 50%;
+    transform: translateX(-50%) translateY(-130px);
+    background: linear-gradient(135deg, #f0a500, #e8a000);
+    border-radius: 14px;
+    padding: 11px 22px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #111;
+    z-index: 1001;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 6px 24px rgba(0,0,0,.5);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  #celebration-banner.show { transform: translateX(-50%) translateY(0); }
+
   .empty-state {
     text-align: center;
     padding: 40px 20px;
@@ -938,6 +958,19 @@
 <!-- PANEL: STATS -->
 <div class="panel" id="panel-stats">
   <div id="stats-container"></div>
+</div>
+
+<!-- CELEBRATION BANNER (team complete) -->
+<div id="celebration-banner"></div>
+
+<!-- ALBUM COMPLETE MODAL -->
+<div id="album-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.92);align-items:center;justify-content:center;flex-direction:column;">
+  <div style="text-align:center;padding:32px 24px;max-width:300px;">
+    <div style="font-size:72px;line-height:1;margin-bottom:12px;">🏆</div>
+    <div style="font-family:'Bebas Neue',Impact,sans-serif;font-size:42px;color:#FFE066;letter-spacing:3px;line-height:1;margin-bottom:8px;">¡ÁLBUM COMPLETO!</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;color:rgba(255,255,255,.8);margin-bottom:24px;">Completaste el álbum del Mundial 2026 🌍⚽</div>
+    <button onclick="document.getElementById('album-modal').style.display='none'" style="background:#FFE066;color:#111;border:none;border-radius:12px;padding:12px 32px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;cursor:pointer;">¡GENIAL! 🎉</button>
+  </div>
 </div>
 
 <!-- LOADING -->
@@ -2823,6 +2856,7 @@ function renderCollection() {
 }
 
 function toggleSticker(code) {
+  const prevSet = getCompleteTeamSet();
   if (!collection[code]) collection[code] = {owned: false, count: 0};
   const c = collection[code];
   if (!c.owned) {
@@ -2839,6 +2873,7 @@ function toggleSticker(code) {
   saveState();
   updateHeader();
   renderCollection();
+  checkAndCelebrate(prevSet);
 }
 
 // ═══════════════════════════════════════════
@@ -3216,44 +3251,63 @@ function renderStats() {
     !ALBUM[k].stickers.some(s => collection[s.code]?.owned)
   ).length;
 
-  const ccOwned    = ALBUM['CC'].stickers.filter(s => collection[s.code]?.owned).length;
-  const ccTotal    = ALBUM['CC'].stickers.length;
-  const fwcOwned   = ALBUM['INTRO'].stickers.filter(s => collection[s.code]?.owned).length;
-  const fwcTotal   = ALBUM['INTRO'].stickers.length;
-  const pnOwned    = ALBUM['PANINI'].stickers.filter(s => collection[s.code]?.owned).length;
-  const pnTotal    = ALBUM['PANINI'].stickers.length;
-  const spOwned    = ccOwned + fwcOwned + pnOwned;
-  const spTotal    = ccTotal + fwcTotal + pnTotal;
+  // Coca-Cola (CC) separado de Especiales (INTRO + PANINI)
+  const ccOwned       = ALBUM['CC'].stickers.filter(s => collection[s.code]?.owned).length;
+  const ccTotal       = ALBUM['CC'].stickers.length;
+  const ccPct         = ccTotal ? Math.round(ccOwned/ccTotal*100) : 0;
+  const fwcOwned      = ALBUM['INTRO'].stickers.filter(s => collection[s.code]?.owned).length;
+  const fwcTotal      = ALBUM['INTRO'].stickers.length;
+  const pnOwned       = ALBUM['PANINI'].stickers.filter(s => collection[s.code]?.owned).length;
+  const pnTotal       = ALBUM['PANINI'].stickers.length;
+  const spOwned       = fwcOwned + pnOwned;
+  const spTotal       = fwcTotal + pnTotal;
+  const spPct         = spTotal ? Math.round(spOwned/spTotal*100) : 0;
 
-  // Distribution buckets (8 ranges)
-  const buckets = [
-    { label: '0%',      color: '#555',    teams: [] },
-    { label: '1–15%',   color: '#e74c3c', teams: [] },
-    { label: '16–30%',  color: '#e67e22', teams: [] },
-    { label: '31–45%',  color: '#f39c12', teams: [] },
-    { label: '46–60%',  color: '#f1c40f', teams: [] },
-    { label: '61–75%',  color: '#8bc34a', teams: [] },
-    { label: '76–99%',  color: '#2ecc71', teams: [] },
-    { label: '100%',    color: '#f0a500', teams: [] },
-  ];
-  for (const k of teamKeys) {
+  // Dynamic distribution — individual counts when close to done (≤10 missing per team)
+  const teamData = teamKeys.map(k => {
     const tot = ALBUM[k].stickers.length;
     const own = ALBUM[k].stickers.filter(s => collection[s.code]?.owned).length;
-    const p = tot ? own / tot : 0;
-    if (p === 0)        buckets[0].teams.push(k);
-    else if (p <= 0.15) buckets[1].teams.push(k);
-    else if (p <= 0.30) buckets[2].teams.push(k);
-    else if (p <= 0.45) buckets[3].teams.push(k);
-    else if (p <= 0.60) buckets[4].teams.push(k);
-    else if (p <= 0.75) buckets[5].teams.push(k);
-    else if (p < 1)     buckets[6].teams.push(k);
-    else                buckets[7].teams.push(k);
+    return { k, tot, own, miss: tot - own, pct: tot ? own/tot : 0 };
+  });
+  const maxMissing = Math.max(...teamData.map(t => t.miss), 0);
+
+  let buckets;
+  if (maxMissing <= 10) {
+    // Show individual missing counts: "Completo", "Falta 1", "Falta 2", ...
+    const missColors = ['#f0a500','#2ecc71','#8bc34a','#a8d448','#f1c40f','#f39c12','#e67e22','#e67e22','#e74c3c','#e74c3c','#e74c3c'];
+    const tempBuckets = [];
+    for (let m = 0; m <= maxMissing; m++) {
+      const teams = teamData.filter(t => t.miss === m).map(t => t.k);
+      if (teams.length) tempBuckets.push({ label: m === 0 ? '✓ Completo' : `Falta ${m}`, color: missColors[m] || '#e74c3c', teams });
+    }
+    buckets = tempBuckets;
+  } else {
+    // Percentage buckets — skip empty ones
+    const PCT_RANGES = [
+      { label: '100%',   color: '#f0a500', test: p => p >= 1 },
+      { label: '76–99%', color: '#2ecc71', test: p => p >= 0.76 && p < 1 },
+      { label: '61–75%', color: '#8bc34a', test: p => p >= 0.61 && p < 0.76 },
+      { label: '46–60%', color: '#f1c40f', test: p => p >= 0.46 && p < 0.61 },
+      { label: '31–45%', color: '#f39c12', test: p => p >= 0.31 && p < 0.46 },
+      { label: '16–30%', color: '#e67e22', test: p => p >= 0.16 && p < 0.31 },
+      { label: '1–15%',  color: '#e74c3c', test: p => p > 0 && p < 0.16 },
+      { label: '0%',     color: '#555',    test: p => p === 0 },
+    ];
+    buckets = PCT_RANGES.map(r => ({
+      label: r.label, color: r.color,
+      teams: teamData.filter(t => r.test(t.pct)).map(t => t.k)
+    })).filter(b => b.teams.length > 0);
   }
+
+  // Map each team to its bucket index for filtering
+  const teamBucketMap = {};
+  buckets.forEach((b, i) => b.teams.forEach(k => { teamBucketMap[k] = i; }));
+
   const distBars = buckets.map((b, i) => {
     const cnt = b.teams.length;
     const w = totalTeams ? Math.round(cnt / totalTeams * 100) : 0;
     return `<div class="dist-bar-row" data-active="" onclick="showDistTeams(${i})" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;cursor:pointer;transition:opacity .2s;">
-      <div style="font-size:11px;color:var(--muted);width:48px;text-align:right;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px">${b.label}</div>
+      <div style="font-size:11px;color:var(--muted);width:60px;text-align:right;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px">${b.label}</div>
       <div style="flex:1;background:var(--border);border-radius:6px;height:28px;overflow:hidden;">
         <div style="height:100%;width:${w}%;background:${b.color};border-radius:6px;transition:width .5s;"></div>
       </div>
@@ -3288,6 +3342,18 @@ function renderStats() {
         <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--gold),#e8a000);border-radius:8px;transition:width .5s;"></div>
       </div>
     </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
+        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Especiales</div>
+        <div class="stat-value" style="font-size:28px">${spOwned}<span style="font-size:13px;color:var(--muted)">/${spTotal}</span></div>
+        <div class="stat-sub" style="font-size:10px">${spPct}% · FWC ${fwcOwned} · PN ${pnOwned}</div>
+      </div>
+      <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
+        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Coca-Cola</div>
+        <div class="stat-value" style="font-size:28px">${ccOwned}<span style="font-size:13px;color:var(--muted)">/${ccTotal}</span></div>
+        <div class="stat-sub" style="font-size:10px">${ccPct}%</div>
+      </div>
+    </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">
       <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
         <div class="stat-label" style="font-size:10px;letter-spacing:1px">Escudos</div>
@@ -3300,13 +3366,8 @@ function renderStats() {
         <div class="stat-sub" style="font-size:10px">${totalTeams ? Math.round(fotosEquipo/totalTeams*100) : 0}%</div>
       </div>
       <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
-        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Especiales</div>
-        <div class="stat-value" style="font-size:28px">${spOwned}<span style="font-size:13px;color:var(--muted)">/${spTotal}</span></div>
-        <div class="stat-sub" style="font-size:10px">CC ${ccOwned} · FWC ${fwcOwned} · PN ${pnOwned}</div>
-      </div>
-      <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
         <div class="stat-label" style="font-size:10px;letter-spacing:1px">Completos</div>
-        <div class="stat-value" style="font-size:28px;color:#2ecc71">${completos}</div>
+        <div class="stat-value" style="font-size:28px;color:#2ecc71">${completos}<span style="font-size:13px;color:var(--muted)">/${totalTeams}</span></div>
       </div>
       <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
         <div class="stat-label" style="font-size:10px;letter-spacing:1px">Empezados</div>
@@ -3330,15 +3391,13 @@ function renderStats() {
 
   for (const teamCode of teamKeys) {
     const team = ALBUM[teamCode];
-    const tot = team.stickers.length;
-    const own = team.stickers.filter(s => collection[s.code]?.owned).length;
-    const pct2 = Math.round(own/tot*100);
-    const ratio = tot ? own/tot : 0;
-    const bi = ratio===0?0:ratio<=0.15?1:ratio<=0.30?2:ratio<=0.45?3:ratio<=0.60?4:ratio<=0.75?5:ratio<1?6:7;
+    const td = teamData.find(t => t.k === teamCode);
+    const pct2 = td ? Math.round(td.pct * 100) : 0;
+    const bi = teamBucketMap[teamCode] ?? 0;
     html += `<div class="team-row" data-bucket="${bi}">
       <div class="team-name">${team.label}</div>
       <div class="team-bar-bg"><div class="team-bar-fill" style="width:${pct2}%"></div></div>
-      <div class="team-pct">${own}/${tot}</div>
+      <div class="team-pct">${td ? td.own : 0}/${td ? td.tot : 0}</div>
     </div>`;
   }
 
@@ -3646,6 +3705,7 @@ function showBasesResult(detected) {
 }
 
 function applyBases() {
+  const prevSet = getCompleteTeamSet();
   let nuevas = 0;
   pendingBases.forEach(code => {
     if (!collection[code]?.owned) {
@@ -3659,6 +3719,7 @@ function applyBases() {
   pendingBases = [];
   document.getElementById('bases-result').style.display = 'none';
   showToast(`✅ ${nuevas} figurita${nuevas !== 1 ? 's' : ''} marcada${nuevas !== 1 ? 's' : ''} como pegada${nuevas !== 1 ? 's' : ''}`);
+  checkAndCelebrate(prevSet);
 }
 
 function showRepesResult(detected) {
@@ -4007,6 +4068,77 @@ function toggleTheme() {
 }
 
 // ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// CELEBRATIONS
+// ═══════════════════════════════════════════
+const CELEBRATED_TEAMS_KEY  = 'album2026_celebrated_teams';
+const ALBUM_CELEBRATED_KEY  = 'album2026_album_complete_celebrated';
+
+function getCelebratedTeamSet() {
+  try { return new Set(JSON.parse(localStorage.getItem(CELEBRATED_TEAMS_KEY) || '[]')); }
+  catch(e) { return new Set(); }
+}
+function markTeamCelebrated(k) {
+  const s = getCelebratedTeamSet(); s.add(k);
+  localStorage.setItem(CELEBRATED_TEAMS_KEY, JSON.stringify([...s]));
+}
+
+function getCompleteTeamSet() {
+  return new Set(
+    Object.keys(ALBUM)
+      .filter(k => !['INTRO','CC','PANINI'].includes(k))
+      .filter(k => ALBUM[k].stickers.every(s => collection[s.code]?.owned))
+  );
+}
+
+function showTeamCelebration(label) {
+  const b = document.getElementById('celebration-banner');
+  b.textContent = '🎉 ¡Completaste ' + label + '!';
+  b.classList.add('show');
+  clearTimeout(b._timer);
+  b._timer = setTimeout(() => b.classList.remove('show'), 3800);
+}
+
+function showAlbumCelebration() {
+  const m = document.getElementById('album-modal');
+  if (m) m.style.display = 'flex';
+}
+
+function checkAndCelebrate(prevCompleteSet) {
+  const celebrated = getCelebratedTeamSet();
+  const teamKeys = Object.keys(ALBUM).filter(k => !['INTRO','CC','PANINI'].includes(k));
+  const newlyComplete = [];
+  for (const k of teamKeys) {
+    if (!prevCompleteSet.has(k) && ALBUM[k].stickers.every(s => collection[s.code]?.owned) && !celebrated.has(k)) {
+      newlyComplete.push(k);
+      markTeamCelebrated(k);
+    }
+  }
+  newlyComplete.forEach((k, i) => {
+    setTimeout(() => showTeamCelebration(ALBUM[k].label), i * 2200);
+  });
+  const allComplete = teamKeys.every(k => ALBUM[k].stickers.every(s => collection[s.code]?.owned));
+  if (allComplete && localStorage.getItem(ALBUM_CELEBRATED_KEY) !== '1') {
+    localStorage.setItem(ALBUM_CELEBRATED_KEY, '1');
+    setTimeout(() => showAlbumCelebration(), newlyComplete.length * 2200 + 1200);
+  }
+}
+
+function checkFirstLoadCelebrations() {
+  const celebrated = getCelebratedTeamSet();
+  const teamKeys = Object.keys(ALBUM).filter(k => !['INTRO','CC','PANINI'].includes(k));
+  const unseen = teamKeys.filter(k =>
+    ALBUM[k].stickers.every(s => collection[s.code]?.owned) && !celebrated.has(k)
+  );
+  if (!unseen.length) return;
+  unseen.forEach(k => markTeamCelebrated(k));
+  if (unseen.length <= 3) {
+    unseen.forEach((k, i) => setTimeout(() => showTeamCelebration(ALBUM[k].label), i * 2200 + 1400));
+  } else {
+    setTimeout(() => showTeamCelebration(unseen.length + ' equipos'), 1400);
+  }
+}
+
 // INIT
 // ═══════════════════════════════════════════
 (async function init() {
@@ -4020,6 +4152,7 @@ function toggleTheme() {
   } else {
     syncFromSupabase();
   }
+  setTimeout(checkFirstLoadCelebrations, 2000);
 })();
 
 if ('serviceWorker' in navigator) {
