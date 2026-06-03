@@ -859,11 +859,19 @@
 <!-- PANEL: FALTANTES -->
 <div class="panel" id="panel-faltantes">
   <button class="share-btn" onclick="shareMissing()">📤 Compartir lista de faltantes</button>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+  <div style="font-size:11px;color:var(--muted);margin-bottom:4px;letter-spacing:0.5px;text-transform:uppercase;">Reporte completo (A4)</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
     <button class="share-btn" style="margin-bottom:0;" onclick="printReport(false,false)">🖨️ Por grupo</button>
     <button class="share-btn" style="margin-bottom:0;" onclick="printReport(false,true)">📥 PDF por grupo</button>
     <button class="share-btn" style="margin-bottom:0;" onclick="printReport(true,false)">🖨️ A-Z</button>
     <button class="share-btn" style="margin-bottom:0;" onclick="printReport(true,true)">📥 PDF A-Z</button>
+  </div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:4px;letter-spacing:0.5px;text-transform:uppercase;">Comprimido (½ página · sin cabecera)</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+    <button class="share-btn" style="margin-bottom:0;" onclick="printReportCompact(false,false)">🖨️ Por grupo</button>
+    <button class="share-btn" style="margin-bottom:0;" onclick="printReportCompact(false,true)">📥 PDF por grupo</button>
+    <button class="share-btn" style="margin-bottom:0;" onclick="printReportCompact(true,false)">🖨️ A-Z</button>
+    <button class="share-btn" style="margin-bottom:0;" onclick="printReportCompact(true,true)">📥 PDF A-Z</button>
   </div>
   <div id="missing-container"></div>
 </div>
@@ -3011,6 +3019,109 @@ function printReport(sortAlpha, download=false) {
   if (download) downloadPdf(html, 'faltantes-mundial2026' + (sortAlpha ? '-az' : '') + '.pdf');
   else openPdfWindow(html);
 }
+function printReportCompact(sortAlpha, download=false) {
+  const GROUPS = 'ABCDEFGHIJKL'.split('');
+  const teamKeys = Object.keys(ALBUM).filter(k => !['INTRO','CC','PANINI'].includes(k));
+  const groupOf = {};
+  teamKeys.forEach((k,i) => { groupOf[k] = GROUPS[Math.floor(i/4)]; });
+
+  function missingNums(key, prefix) {
+    return ALBUM[key].stickers
+      .filter(s => !collection[s.code]?.owned)
+      .map(s => s.code.replace(prefix||key,''));
+  }
+
+  let items;
+  if (sortAlpha) {
+    items = teamKeys
+      .map(k => ({ key: k, label: ALBUM[k].label.replace('Bosnia y Herzegovina','Bosnia').replace('Estados Unidos','EE.UU.'), group: groupOf[k], nums: missingNums(k) }))
+      .filter(t => t.nums.length > 0)
+      .sort((a, b) => a.label.localeCompare(b.label, 'es'));
+    [['INTRO','FWC','Intro','·'],['CC','CC','Coca-Cola','·'],['PANINI','PANINI','Panini','·']].forEach(([key,prefix,lbl,grp]) => {
+      const nums = missingNums(key, prefix);
+      if (nums.length) items.push({ key: '', label: lbl, group: grp, nums });
+    });
+  } else {
+    items = [];
+    teamKeys.forEach((k,i) => {
+      const nums = missingNums(k);
+      if (!nums.length) return;
+      const grp = GROUPS[Math.floor(i/4)];
+      items.push({ key: k, label: ALBUM[k].label.replace('Bosnia y Herzegovina','Bosnia').replace('Estados Unidos','EE.UU.'), group: grp, nums });
+    });
+    [['INTRO','FWC','Intro'],['CC','CC','Coca-Cola'],['PANINI','PANINI','Panini']].forEach(([key,prefix,lbl]) => {
+      const nums = missingNums(key, prefix);
+      if (nums.length) items.push({ key: lbl, label: lbl, group: '·', nums });
+    });
+  }
+
+  const n = items.filter(t => !t.header).length;
+
+  // A6 portrait: 105×148mm, margin 3mm → usable 99×142mm
+  const NUM_COLS = 3;
+  const colWidthMm = (99 - (NUM_COLS - 1) * 2) / NUM_COLS; // ~31.67mm
+  const teamItems = items.filter(t => !t.header);
+  const avgMissing = teamItems.reduce((s, t) => s + t.nums.length, 0) / Math.max(teamItems.length, 1);
+  const avgCharsPerRow = 14 + avgMissing * 2.5;
+  const rowsPerCol = Math.ceil(items.length / NUM_COLS);
+  let fontPt = 5;
+  for (let f = 5; f <= 10; f++) {
+    const charsPerLine = Math.max(1, Math.floor(colWidthMm / (f * 0.353 * 0.63)));
+    const linesPerRow = Math.max(1, Math.ceil(avgCharsPerRow / charsPerLine));
+    if (rowsPerCol * linesPerRow * f * 0.353 * 1.15 <= 142) fontPt = f;
+    else break;
+  }
+
+  const colCount = Math.min(NUM_COLS, items.length);
+  const perCol = Math.ceil(items.length / colCount);
+  const columns = Array.from({length: colCount}, (_, i) => items.slice(i*perCol, (i+1)*perCol)).filter(c => c.length);
+  for (let i = 0; i < columns.length - 1; i++) {
+    while (columns[i].length > 0 && columns[i][columns[i].length - 1].header) {
+      columns[i + 1].unshift(columns[i].pop());
+    }
+  }
+  if (columns.length > 0) {
+    const last = columns[columns.length - 1];
+    if (last.length === 1 && last[0].header) columns.pop();
+  }
+
+  const grpSize = Math.max(4, Math.round(fontPt * 0.78));
+  function renderItem(item) {
+    if (item.header) return '<div class="gh">' + item.label + '</div>';
+    const grpTag = item.group && item.group !== '·' ? ' <span class="grp">[' + item.group + ']</span>' : '';
+    const codeTag = item.key ? '<span class="tcode">' + item.key + '</span> ' : '';
+    return '<div class="tb">' + codeTag + '<span class="tn">' + item.label + grpTag + ':</span> <span class="tnums">' + item.nums.join(' ') + '</span></div>';
+  }
+
+  const colsHtml = columns.map(col => '<div class="col">' + col.map(renderItem).join('') + '</div>').join('');
+
+  const css = '@import url(\'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&display=swap\');'
+    + '@page{size:A6 portrait;margin:3mm}'
+    + '*{box-sizing:border-box;margin:0;padding:0}'
+    + 'body{font-family:\'Barlow Condensed\',Arial Narrow,sans-serif;color:#111;background:#fff;font-size:' + fontPt + 'pt;line-height:1.15}'
+    + '.cols-wrap{display:flex;gap:2mm;align-items:flex-start}'
+    + '.col{flex:1 1 0;min-width:0}'
+    + '.tb{margin-bottom:0;line-height:1.15}'
+    + '.tcode{font-weight:700;color:#888;font-size:' + grpSize + 'pt}'
+    + '.tn{font-weight:700}'
+    + '.grp{font-weight:400;font-size:' + grpSize + 'pt;color:#888}'
+    + '.tnums{color:#333;font-weight:600}'
+    + '.gh{font-weight:900;font-size:' + grpSize + 'pt;text-transform:uppercase;color:#003DA5;border-bottom:0.3pt solid #003DA5;margin:2pt 0 1pt;letter-spacing:0.5px}'
+    + '@media screen{html{background:#ccc}body{width:99mm;margin:5mm auto;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3)}}';
+
+  const body = n > 0 ? colsHtml : '<p style="color:#888;font-size:8pt;margin:4mm 0">¡Álbum completo! 🏆</p>';
+  const printScript = download ? '' : '<script>window.onload=()=>{window.print()}<\/script>';
+
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Faltantes Comprimido</title>'
+    + '<style>' + css + '</style></head><body>'
+    + '<div class="cols-wrap">' + body + '</div>'
+    + printScript
+    + '</body></html>';
+
+  if (download) downloadPdf(html, 'faltantes-compacto-mundial2026' + (sortAlpha ? '-az' : '') + '.pdf');
+  else openPdfWindow(html);
+}
+
 function shareMissing() {
   const allStickers = getAllStickers();
   const missing = allStickers.filter(s => !collection[s.code]?.owned);
