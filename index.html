@@ -3070,7 +3070,7 @@ function printReportCompact(sortAlpha, download=false) {
   // Barlow Condensed char width ≈ 0.5 × pt × 0.353mm; line height 1.15
   let fontPt = 6;
   for (let f = 6; f <= 14; f++) {
-    const charsPerLine = Math.max(1, Math.floor(colWidthMm / (f * 0.353 * 0.75)));
+    const charsPerLine = Math.max(1, Math.floor(colWidthMm / (f * 0.353 * 0.92)));
     const linesPerRow = Math.max(1, Math.ceil(avgCharsPerRow / charsPerLine));
     if (rowsPerCol * linesPerRow * f * 0.353 * 1.15 <= CONTENT_H_MM) fontPt = f;
     else break;
