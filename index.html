@@ -2331,6 +2331,7 @@ async function syncFromSupabase() {
       if (activeTab === 'stats') renderStats();
     }
   } catch(e) {}
+  checkFirstLoadCelebrations();
 }
 
 async function showUserModal() {
@@ -4106,16 +4107,15 @@ function toggleTheme() {
 // ═══════════════════════════════════════════
 // CELEBRATIONS
 // ═══════════════════════════════════════════
-const CELEBRATED_TEAMS_KEY  = 'album2026_celebrated_teams';
-const ALBUM_CELEBRATED_KEY  = 'album2026_album_complete_celebrated';
-
 function getCelebratedTeamSet() {
-  try { return new Set(JSON.parse(localStorage.getItem(CELEBRATED_TEAMS_KEY) || '[]')); }
-  catch(e) { return new Set(); }
+  return new Set(collection.__celebrated || []);
 }
 function markTeamCelebrated(k) {
-  const s = getCelebratedTeamSet(); s.add(k);
-  localStorage.setItem(CELEBRATED_TEAMS_KEY, JSON.stringify([...s]));
+  if (!collection.__celebrated) collection.__celebrated = [];
+  if (!collection.__celebrated.includes(k)) {
+    collection.__celebrated.push(k);
+    saveState();
+  }
 }
 
 function getCompleteTeamSet() {
@@ -4185,8 +4185,9 @@ function checkAndCelebrate(prevCompleteSet) {
   }
   newlyComplete.forEach(k => showTeamCelebration(ALBUM[k].label));
   const allComplete = teamKeys.every(k => ALBUM[k].stickers.every(s => collection[s.code]?.owned));
-  if (allComplete && localStorage.getItem(ALBUM_CELEBRATED_KEY) !== '1') {
-    localStorage.setItem(ALBUM_CELEBRATED_KEY, '1');
+  if (allComplete && !collection.__albumCelebrated) {
+    collection.__albumCelebrated = true;
+    saveState();
     setTimeout(() => showAlbumCelebration(), 400);
   }
 }
@@ -4217,9 +4218,8 @@ function checkFirstLoadCelebrations() {
   if (!currentUser) {
     await showUserModal();
   } else {
-    syncFromSupabase();
+    syncFromSupabase(); // llama checkFirstLoadCelebrations al terminar
   }
-  setTimeout(checkFirstLoadCelebrations, 2000);
 })();
 
 if ('serviceWorker' in navigator) {
