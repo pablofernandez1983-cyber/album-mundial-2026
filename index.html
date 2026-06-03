@@ -3342,40 +3342,40 @@ function renderStats() {
         <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--gold),#e8a000);border-radius:8px;transition:width .5s;"></div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-      <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
-        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Especiales</div>
-        <div class="stat-value" style="font-size:28px">${spOwned}<span style="font-size:13px;color:var(--muted)">/${spTotal}</span></div>
-        <div class="stat-sub" style="font-size:10px">${spPct}% · FWC ${fwcOwned} · PN ${pnOwned}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+      <div class="stat-card" style="margin-bottom:0;padding:10px 8px;">
+        <div class="stat-label" style="font-size:9px;letter-spacing:1px">Especiales</div>
+        <div class="stat-value" style="font-size:24px">${spOwned}<span style="font-size:11px;color:var(--muted)">/${spTotal}</span></div>
+        <div class="stat-sub" style="font-size:9px">${spPct}%</div>
       </div>
-      <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
-        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Coca-Cola</div>
-        <div class="stat-value" style="font-size:28px">${ccOwned}<span style="font-size:13px;color:var(--muted)">/${ccTotal}</span></div>
-        <div class="stat-sub" style="font-size:10px">${ccPct}%</div>
+      <div class="stat-card" style="margin-bottom:0;padding:10px 8px;">
+        <div class="stat-label" style="font-size:9px;letter-spacing:1px">Coca-Cola</div>
+        <div class="stat-value" style="font-size:24px">${ccOwned}<span style="font-size:11px;color:var(--muted)">/${ccTotal}</span></div>
+        <div class="stat-sub" style="font-size:9px">${ccPct}%</div>
+      </div>
+      <div class="stat-card" style="margin-bottom:0;padding:10px 8px;">
+        <div class="stat-label" style="font-size:9px;letter-spacing:1px">Escudos</div>
+        <div class="stat-value" style="font-size:24px">${escudos}<span style="font-size:11px;color:var(--muted)">/${totalTeams}</span></div>
+        <div class="stat-sub" style="font-size:9px">${totalTeams ? Math.round(escudos/totalTeams*100) : 0}%</div>
+      </div>
+      <div class="stat-card" style="margin-bottom:0;padding:10px 8px;">
+        <div class="stat-label" style="font-size:9px;letter-spacing:1px">Equipos</div>
+        <div class="stat-value" style="font-size:24px">${fotosEquipo}<span style="font-size:11px;color:var(--muted)">/${totalTeams}</span></div>
+        <div class="stat-sub" style="font-size:9px">${totalTeams ? Math.round(fotosEquipo/totalTeams*100) : 0}%</div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">
       <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
-        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Escudos</div>
-        <div class="stat-value" style="font-size:28px">${escudos}<span style="font-size:13px;color:var(--muted)">/${totalTeams}</span></div>
-        <div class="stat-sub" style="font-size:10px">${totalTeams ? Math.round(escudos/totalTeams*100) : 0}%</div>
-      </div>
-      <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
-        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Equipo</div>
-        <div class="stat-value" style="font-size:28px">${fotosEquipo}<span style="font-size:13px;color:var(--muted)">/${totalTeams}</span></div>
-        <div class="stat-sub" style="font-size:10px">${totalTeams ? Math.round(fotosEquipo/totalTeams*100) : 0}%</div>
-      </div>
-      <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
-        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Completos</div>
-        <div class="stat-value" style="font-size:28px;color:#2ecc71">${completos}<span style="font-size:13px;color:var(--muted)">/${totalTeams}</span></div>
+        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Sin empezar</div>
+        <div class="stat-value" style="font-size:28px;color:var(--muted)">${sinEmpezar}</div>
       </div>
       <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
         <div class="stat-label" style="font-size:10px;letter-spacing:1px">Empezados</div>
         <div class="stat-value" style="font-size:28px;color:#4a9eff">${empezados}</div>
       </div>
       <div class="stat-card" style="margin-bottom:0;padding:10px 12px;">
-        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Sin empezar</div>
-        <div class="stat-value" style="font-size:28px;color:var(--muted)">${sinEmpezar}</div>
+        <div class="stat-label" style="font-size:10px;letter-spacing:1px">Completos</div>
+        <div class="stat-value" style="font-size:28px;color:#2ecc71">${completos}<span style="font-size:13px;color:var(--muted)">/${totalTeams}</span></div>
       </div>
     </div>
     <div class="stat-card" style="margin-bottom:10px">
