@@ -3057,18 +3057,22 @@ function printReportCompact(sortAlpha, download=false) {
 
   const n = items.filter(t => !t.header).length;
 
-  // A6 portrait: 105×148mm, margin 3mm → usable 99×142mm
+  // Target: A6 portrait (105×148mm), margin 3mm → usable ~99×142mm
+  // For screen preview and iframe rendering: 397px ≈ 105mm at 96dpi
   const NUM_COLS = 3;
-  const colWidthMm = (99 - (NUM_COLS - 1) * 2) / NUM_COLS; // ~31.67mm
+  const CONTENT_W_MM = 99;
+  const CONTENT_H_MM = 142;
+  const colWidthMm = (CONTENT_W_MM - (NUM_COLS - 1) * 2) / NUM_COLS; // ~31.67mm
   const teamItems = items.filter(t => !t.header);
   const avgMissing = teamItems.reduce((s, t) => s + t.nums.length, 0) / Math.max(teamItems.length, 1);
   const avgCharsPerRow = 14 + avgMissing * 2.5;
   const rowsPerCol = Math.ceil(items.length / NUM_COLS);
-  let fontPt = 5;
-  for (let f = 5; f <= 10; f++) {
-    const charsPerLine = Math.max(1, Math.floor(colWidthMm / (f * 0.353 * 0.63)));
+  // Barlow Condensed char width ≈ 0.5 × pt × 0.353mm; line height 1.15
+  let fontPt = 6;
+  for (let f = 6; f <= 14; f++) {
+    const charsPerLine = Math.max(1, Math.floor(colWidthMm / (f * 0.353 * 0.50)));
     const linesPerRow = Math.max(1, Math.ceil(avgCharsPerRow / charsPerLine));
-    if (rowsPerCol * linesPerRow * f * 0.353 * 1.15 <= 142) fontPt = f;
+    if (rowsPerCol * linesPerRow * f * 0.353 * 1.15 <= CONTENT_H_MM) fontPt = f;
     else break;
   }
 
@@ -3085,7 +3089,7 @@ function printReportCompact(sortAlpha, download=false) {
     if (last.length === 1 && last[0].header) columns.pop();
   }
 
-  const grpSize = Math.max(4, Math.round(fontPt * 0.78));
+  const grpSize = Math.max(5, Math.round(fontPt * 0.80));
   function renderItem(item) {
     if (item.header) return '<div class="gh">' + item.label + '</div>';
     const grpTag = item.group && item.group !== '·' ? ' <span class="grp">[' + item.group + ']</span>' : '';
@@ -3099,7 +3103,7 @@ function printReportCompact(sortAlpha, download=false) {
     + '@page{size:A6 portrait;margin:3mm}'
     + '*{box-sizing:border-box;margin:0;padding:0}'
     + 'body{font-family:\'Barlow Condensed\',Arial Narrow,sans-serif;color:#111;background:#fff;font-size:' + fontPt + 'pt;line-height:1.15}'
-    + '.cols-wrap{display:flex;gap:2mm;align-items:flex-start}'
+    + '.cols-wrap{display:flex;gap:2mm;align-items:flex-start;width:' + CONTENT_W_MM + 'mm}'
     + '.col{flex:1 1 0;min-width:0}'
     + '.tb{margin-bottom:0;line-height:1.15}'
     + '.tcode{font-weight:700;color:#888;font-size:' + grpSize + 'pt}'
@@ -3107,10 +3111,11 @@ function printReportCompact(sortAlpha, download=false) {
     + '.grp{font-weight:400;font-size:' + grpSize + 'pt;color:#888}'
     + '.tnums{color:#333;font-weight:600}'
     + '.gh{font-weight:900;font-size:' + grpSize + 'pt;text-transform:uppercase;color:#003DA5;border-bottom:0.3pt solid #003DA5;margin:2pt 0 1pt;letter-spacing:0.5px}'
-    + '@media screen{html{background:#ccc}body{width:99mm;margin:5mm auto;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3)}}';
+    + '@media screen{html{background:#ccc}body{width:' + CONTENT_W_MM + 'mm;margin:5mm auto;background:#fff;padding:3mm;box-shadow:0 2px 8px rgba(0,0,0,.3)}}';
 
   const body = n > 0 ? colsHtml : '<p style="color:#888;font-size:8pt;margin:4mm 0">¡Álbum completo! 🏆</p>';
-  const printScript = download ? '' : '<script>window.onload=()=>{window.print()}<\/script>';
+  // Wait for fonts before printing to avoid fallback-font layout
+  const printScript = download ? '' : '<script>window.onload=async()=>{try{await document.fonts.ready;}catch(e){}window.print();}<\/script>';
 
   const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Faltantes Comprimido</title>'
     + '<style>' + css + '</style></head><body>'
@@ -3118,8 +3123,48 @@ function printReportCompact(sortAlpha, download=false) {
     + printScript
     + '</body></html>';
 
-  if (download) downloadPdf(html, 'faltantes-compacto-mundial2026' + (sortAlpha ? '-az' : '') + '.pdf');
+  if (download) downloadPdfCompact(html, 'faltantes-compacto-mundial2026' + (sortAlpha ? '-az' : '') + '.pdf');
   else openPdfWindow(html);
+}
+
+async function downloadPdfCompact(htmlContent, filename) {
+  showToast('⏳ Generando PDF...');
+  const iframe = document.createElement('iframe');
+  // A6 at 96dpi: 105mm × 3.7795 ≈ 397px wide; height generous for content capture
+  iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:397px;height:2500px;border:none;';
+  document.body.appendChild(iframe);
+  iframe.contentDocument.write(htmlContent);
+  iframe.contentDocument.close();
+  await new Promise(r => setTimeout(r, 1600));
+  try {
+    const canvas = await html2canvas(iframe.contentDocument.body, {
+      scale: 2, useCORS: true, allowTaint: false, logging: false,
+      width: 397, scrollX: 0, scrollY: 0
+    });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a6' });
+    const pW = pdf.internal.pageSize.getWidth();   // 105mm
+    const pH = pdf.internal.pageSize.getHeight();  // 148mm
+    const scale = pW / canvas.width;
+    const pagePixH = Math.round(pH / scale);
+    let yPx = 0;
+    while (yPx < canvas.height) {
+      const sliceH = Math.min(pagePixH, canvas.height - yPx);
+      if (sliceH <= 0) break;
+      const slice = document.createElement('canvas');
+      slice.width = canvas.width; slice.height = sliceH;
+      slice.getContext('2d').drawImage(canvas, 0, yPx, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+      if (yPx > 0) pdf.addPage();
+      pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pW, sliceH * scale);
+      yPx += sliceH;
+    }
+    pdf.save(filename);
+    showToast('✅ PDF descargado');
+  } catch(e) {
+    showToast('Error al generar PDF — usá 🖨️ Imprimir');
+  } finally {
+    document.body.removeChild(iframe);
+  }
 }
 
 function shareMissing() {
