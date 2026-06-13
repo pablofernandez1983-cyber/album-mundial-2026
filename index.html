@@ -877,6 +877,7 @@
 <!-- PANEL: COLECCIÓN -->
 <div class="panel" id="panel-coleccion">
   <input type="text" class="search-bar" placeholder="🔍 País (ARG, Brasil...) o jugador" id="search-input" oninput="renderCollection()">
+  <button class="share-btn" onclick="shareCombined()">📤 Compartir faltantes + repes</button>
   <div style="display:flex;gap:8px;margin-bottom:10px;">
     <button class="share-btn" style="margin-bottom:0;flex:1;" onclick="printCombined(false)">🖨️ Reporte completo</button>
     <button class="share-btn" style="margin-bottom:0;flex:1;" onclick="printCombined(true)">📥 PDF completo</button>
@@ -895,17 +896,13 @@
   <button class="share-btn" onclick="shareMissing()">📤 Compartir lista de faltantes</button>
   <div style="font-size:11px;color:var(--muted);margin-bottom:4px;letter-spacing:0.5px;text-transform:uppercase;">Reporte completo (A4)</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-    <button class="share-btn" style="margin-bottom:0;" onclick="printReport(false,false)">🖨️ Por grupo</button>
-    <button class="share-btn" style="margin-bottom:0;" onclick="printReport(false,true)">📥 PDF por grupo</button>
-    <button class="share-btn" style="margin-bottom:0;" onclick="printReport(true,false)">🖨️ A-Z</button>
-    <button class="share-btn" style="margin-bottom:0;" onclick="printReport(true,true)">📥 PDF A-Z</button>
+    <button class="share-btn" style="margin-bottom:0;" onclick="printReport(false,false)">🖨️ Imprimir</button>
+    <button class="share-btn" style="margin-bottom:0;" onclick="printReport(false,true)">📥 PDF</button>
   </div>
   <div style="font-size:11px;color:var(--muted);margin-bottom:4px;letter-spacing:0.5px;text-transform:uppercase;">Comprimido (½ página · sin cabecera)</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
-    <button class="share-btn" style="margin-bottom:0;" onclick="printReportCompact(false,false)">🖨️ Por grupo</button>
-    <button class="share-btn" style="margin-bottom:0;" onclick="printReportCompact(false,true)">📥 PDF por grupo</button>
-    <button class="share-btn" style="margin-bottom:0;" onclick="printReportCompact(true,false)">🖨️ A-Z</button>
-    <button class="share-btn" style="margin-bottom:0;" onclick="printReportCompact(true,true)">📥 PDF A-Z</button>
+    <button class="share-btn" style="margin-bottom:0;" onclick="printReportCompact(false,false)">🖨️ Imprimir</button>
+    <button class="share-btn" style="margin-bottom:0;" onclick="printReportCompact(false,true)">📥 PDF</button>
   </div>
   <div id="missing-container"></div>
 </div>
@@ -960,7 +957,8 @@
   </div>
 
   <!-- ACCIONES Y LISTA -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:16px;">
+  <button class="share-btn" style="margin-top:16px;" onclick="shareRepes()">📤 Compartir lista de repetidas</button>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;">
     <button class="btn btn-outline" onclick="printRepes(false)">🖨️ Imprimir</button>
     <button class="btn btn-outline" onclick="printRepes(true)">📥 PDF</button>
     <button class="btn btn-outline" style="color:var(--red);" onclick="clearAllRepes()">🗑️ Limpiar</button>
@@ -3244,6 +3242,47 @@ function shareMissing() {
   }
 }
 
+function shareRepes() {
+  const allStickers = getAllStickers();
+  const repes = allStickers.filter(s => (collection[s.code]?.count||0) > 1);
+  if (!repes.length) { showToast('No tenés repetidas aún'); return; }
+  const totalRepes = repes.reduce((a,s) => a + (collection[s.code].count - 1), 0);
+  const text = `Tengo ${totalRepes} repetidas del álbum Mundial 2026:\n` +
+    repes.map(s => {
+      const cnt = collection[s.code].count - 1;
+      return `${s.code} - ${s.name}${cnt > 1 ? ` (×${cnt})` : ''}`;
+    }).join('\n');
+  if (navigator.share) {
+    navigator.share({ title: 'Mis figuritas repetidas', text });
+  } else {
+    navigator.clipboard.writeText(text).then(() => showToast('📋 Lista copiada al portapapeles'));
+  }
+}
+
+function shareCombined() {
+  const allStickers = getAllStickers();
+  const missing = allStickers.filter(s => !collection[s.code]?.owned);
+  const repes = allStickers.filter(s => (collection[s.code]?.count||0) > 1);
+  let text = `Mi álbum Mundial 2026 — ${currentUser || 'Sin usuario'}\n`;
+  if (missing.length) {
+    text += `\nMe faltan ${missing.length} figuritas:\n` + missing.map(s => `${s.code} - ${s.name}`).join('\n');
+  } else {
+    text += '\n¡No me falta ninguna figurita!';
+  }
+  if (repes.length) {
+    const totalRepes = repes.reduce((a,s) => a + (collection[s.code].count - 1), 0);
+    text += `\n\nTengo ${totalRepes} repetidas:\n` + repes.map(s => {
+      const cnt = collection[s.code].count - 1;
+      return `${s.code} - ${s.name}${cnt > 1 ? ` (×${cnt})` : ''}`;
+    }).join('\n');
+  }
+  if (navigator.share) {
+    navigator.share({ title: 'Mi álbum Mundial 2026', text });
+  } else {
+    navigator.clipboard.writeText(text).then(() => showToast('📋 Lista copiada al portapapeles'));
+  }
+}
+
 // ═══════════════════════════════════════════
 // STATS
 // ═══════════════════════════════════════════
@@ -3995,30 +4034,111 @@ async function downloadPdf(htmlContent, filename) {
 }
 
 function printRepes(download=false) {
-  const blocks = buildRepesBlocks();
-  if (!blocks) { showToast('No tenés repetidas para reportar'); return; }
-  const total = Object.values(collection).reduce((a,v) => a + (v.owned && v.count > 1 ? v.count-1 : 0), 0);
-  const fecha = new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const GROUPS = 'ABCDEFGHIJKL'.split('');
+  const FLAGS = {MEX:'🇲🇽',RSA:'🇿🇦',KOR:'🇰🇷',CZE:'🇨🇿',CAN:'🇨🇦',BIH:'🇧🇦',QAT:'🇶🇦',SUI:'🇨🇭',BRA:'🇧🇷',MAR:'🇲🇦',HAI:'🇭🇹',SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',USA:'🇺🇸',PAR:'🇵🇾',AUS:'🇦🇺',TUR:'🇹🇷',GER:'🇩🇪',CUW:'🇨🇼',CIV:'🇨🇮',ECU:'🇪🇨',NED:'🇳🇱',JPN:'🇯🇵',SWE:'🇸🇪',TUN:'🇹🇳',BEL:'🇧🇪',EGY:'🇪🇬',IRN:'🇮🇷',NZL:'🇳🇿',ESP:'🇪🇸',CPV:'🇨🇻',KSA:'🇸🇦',URU:'🇺🇾',FRA:'🇫🇷',SEN:'🇸🇳',IRQ:'🇮🇶',NOR:'🇳🇴',ARG:'🇦🇷',ALG:'🇩🇿',AUT:'🇦🇹',JOR:'🇯🇴',POR:'🇵🇹',COD:'🇨🇩',UZB:'🇺🇿',COL:'🇨🇴',ENG:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',CRO:'🇭🇷',GHA:'🇬🇭',PAN:'🇵🇦'};
+  const teamKeys = Object.keys(ALBUM).filter(k => !['INTRO','CC','PANINI'].includes(k));
+  teamKeys.forEach((k,i) => {});
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<title>Repetidas — Mundial 2026</title>
-<style>${pdfCss('#003DA5')}</style></head><body>
-<div class="hdr" style="background:linear-gradient(135deg,#003DA5 0%,#CC0020 52%,#007A3D 100%)">
-  <img class="hdr-logo" crossorigin="anonymous" src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png">
-  <div class="hdr-mid">
-    <div class="hdr-tag">Álbum Panini · FIFA World Cup 2026™</div>
-    <div class="hdr-title">Mis Repetidas</div>
-    <div class="hdr-user">👤 ${currentUser || 'Sin usuario'}</div>
-    <div class="hdr-meta">${fecha} · Para intercambiar</div>
-  </div>
-  <div class="hdr-pill">
-    <div class="hdr-pill-big">${total}</div>
-    <div class="hdr-pill-label">repetidas</div>
-  </div>
-</div>
-<div class="cols">${blocks}</div>
-${download ? '' : `<script>window.onload=()=>{window.print()}<\/script>`}
-</body></html>`;
+  function repesNums(key, prefix) {
+    return ALBUM[key].stickers
+      .filter(s => (collection[s.code]?.count||0) > 1)
+      .map(s => {
+        const cnt = collection[s.code].count;
+        const num = s.code.replace(prefix||key,'');
+        return cnt > 2 ? `${num}×${cnt-1}` : num;
+      });
+  }
+
+  const items = [];
+  teamKeys.forEach((k,i) => {
+    const nums = repesNums(k);
+    if (!nums.length) return;
+    const grp = GROUPS[Math.floor(i/4)];
+    const label = ALBUM[k].label.replace('Bosnia y Herzegovina','Bosnia').replace('Estados Unidos','EE.UU.');
+    items.push({ flag: FLAGS[k]||'', label, group: grp, nums });
+  });
+  [['INTRO','FWC','Introducción'],['CC','CC','Coca-Cola'],['PANINI','PANINI','Panini']].forEach(([key,prefix,lbl]) => {
+    const nums = repesNums(key, prefix);
+    if (nums.length) items.push({ flag: '', label: lbl, group: '·', nums });
+  });
+
+  if (!items.length) { showToast('No tenés repetidas para reportar'); return; }
+
+  const total = Object.values(collection).reduce((a,v) => a + (v.owned && (v.count||1) > 1 ? (v.count||1)-1 : 0), 0);
+  const fecha = new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const userLine = currentUser || 'Sin usuario';
+
+  const NUM_COLS = 3;
+  const n = items.length;
+  const rowsPerCol = n > 0 ? Math.ceil(n / NUM_COLS) : 1;
+  const colWidthMm = (198 - (NUM_COLS - 1) * 3) / NUM_COLS;
+  const avgNums = items.reduce((s, t) => s + t.nums.length, 0) / Math.max(n, 1);
+  const avgCharsPerRow = 14 + avgNums * 2.5;
+  let fontPt = 9;
+  for (let f = 9; f <= 20; f++) {
+    const charsPerLine = Math.max(1, Math.floor(colWidthMm / (f * 0.353 * 0.63)));
+    const linesPerRow = Math.max(1, Math.ceil(avgCharsPerRow / charsPerLine));
+    if (rowsPerCol * linesPerRow * f * 0.353 * 1.35 <= 220) fontPt = f;
+    else break;
+  }
+  const rowGapPt = Math.max(1, Math.round(fontPt * 0.15));
+
+  const colCount = Math.min(NUM_COLS, items.length);
+  const perCol = Math.ceil(items.length / colCount);
+  const columns = Array.from({length: colCount}, (_, i) => items.slice(i*perCol, (i+1)*perCol)).filter(c => c.length);
+
+  function renderItem(item) {
+    const grpTag = item.group && item.group !== '·' ? ' <span class="grp">[' + item.group + ']</span>' : '';
+    const flagSpan = item.flag ? item.flag + ' ' : '';
+    return '<div class="tb">' + flagSpan + '<span class="tn">' + item.label + grpTag + ':</span> <span class="tnums">' + item.nums.join(' ') + '</span></div>';
+  }
+
+  const colsHtml = columns.map(col => '<div class="col">' + col.map(renderItem).join('') + '</div>').join('');
+
+  const grpSize = Math.max(7, Math.round(fontPt * 0.78));
+  const css = '@import url(\'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&display=swap\');'
+    + '@page{size:A4 portrait;margin:6mm}'
+    + '*{box-sizing:border-box;margin:0;padding:0}'
+    + 'body{font-family:\'Barlow Condensed\',Arial Narrow,sans-serif;color:#111;background:#fff;font-size:' + fontPt + 'pt}'
+    + '.hdr{padding:3mm 4mm;display:flex;align-items:center;gap:4mm;margin-bottom:3mm;border-radius:2mm}'
+    + '.hdr-logo{height:14mm;width:auto;flex-shrink:0;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}'
+    + '.hdr-mid{flex:1;min-width:0}'
+    + '.hdr-tag{font-size:5pt;letter-spacing:2px;color:rgba(255,255,255,.7);text-transform:uppercase;margin-bottom:0.5mm}'
+    + '.hdr-title{font-family:Impact,\'Arial Black\',sans-serif;font-size:13pt;font-weight:900;color:#FFE066;text-transform:uppercase;letter-spacing:1.5px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,.4);margin-bottom:1mm}'
+    + '.hdr-user{font-size:7pt;color:#fff;font-weight:bold;margin-bottom:0.3mm}'
+    + '.hdr-meta{font-size:5pt;color:rgba(255,255,255,.6)}'
+    + '.hdr-pill{background:rgba(0,0,0,.3);border-radius:1.5mm;padding:2mm 3mm;text-align:right;flex-shrink:0}'
+    + '.hdr-pill-big{font-family:Impact,\'Arial Black\',sans-serif;font-size:14pt;font-weight:900;color:#FFE066;line-height:1}'
+    + '.hdr-pill-label{font-size:4pt;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:1px;margin-top:0.3mm}'
+    + '.cols-wrap{display:flex;gap:3mm;align-items:flex-start}'
+    + '.col{flex:1 1 0;min-width:0}'
+    + '.tb{margin-bottom:' + rowGapPt + 'pt;line-height:1.35}'
+    + '.tn{font-weight:700}'
+    + '.grp{font-weight:400;font-size:' + grpSize + 'pt;color:#888}'
+    + '.tnums{color:#333;font-weight:600}'
+    + '@media screen{html{background:#ccc}body{width:198mm;margin:10mm auto;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3)}}';
+
+  const printScript = download ? '' : '<script>window.onload=()=>{window.print()}<\/script>';
+
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Repetidas — Mundial 2026</title>'
+    + '<style>' + css + '</style></head><body>'
+    + '<div class="hdr" style="background:linear-gradient(135deg,#003DA5 0%,#CC0020 52%,#007A3D 100%)">'
+    + '  <img class="hdr-logo" crossorigin="anonymous" src="https://upload.wikimedia.org/wikipedia/en/thumb/1/17/2026_FIFA_World_Cup_emblem.svg/250px-2026_FIFA_World_Cup_emblem.svg.png">'
+    + '  <div class="hdr-mid">'
+    + '    <div class="hdr-tag">Álbum Panini · FIFA World Cup 2026™</div>'
+    + '    <div class="hdr-title">Mis Repetidas</div>'
+    + '    <div class="hdr-user">👤 ' + userLine + '</div>'
+    + '    <div class="hdr-meta">' + fecha + ' · Para intercambiar · ' + fontPt + 'pt</div>'
+    + '  </div>'
+    + '  <div class="hdr-pill">'
+    + '    <div class="hdr-pill-big">' + total + '</div>'
+    + '    <div class="hdr-pill-label">repetidas</div>'
+    + '  </div>'
+    + '</div>'
+    + '<div class="cols-wrap">' + colsHtml + '</div>'
+    + printScript
+    + '</body></html>';
+
   if (download) downloadPdf(html, 'repes-mundial2026.pdf');
   else openPdfWindow(html);
 }
