@@ -3242,12 +3242,27 @@ async function downloadPdfCompact(htmlContent, filename) {
   }
 }
 
+function groupedShareText(stickers, cntFn) {
+  const lines = [];
+  for (const [teamCode, team] of Object.entries(ALBUM)) {
+    const relevant = stickers.filter(s => s.team === teamCode);
+    if (!relevant.length) continue;
+    const prefix = teamCode === 'INTRO' ? 'FWC' : teamCode;
+    const nums = relevant.map(s => {
+      const num = s.code.replace(prefix, '');
+      const suffix = cntFn ? cntFn(s) : '';
+      return num + suffix;
+    });
+    lines.push(`${team.label}: ${nums.join(', ')}`);
+  }
+  return lines.join('\n');
+}
+
 function shareMissing() {
   const allStickers = getAllStickers();
   const missing = allStickers.filter(s => !collection[s.code]?.owned);
   if (!missing.length) { showToast('¡No te falta ninguna!'); return; }
-  const text = `Me faltan ${missing.length} figuritas del álbum Mundial 2026:\n` +
-    missing.map(s => s.code).join('\n');
+  const text = `Me faltan ${missing.length} figuritas del álbum Mundial 2026:\n` + groupedShareText(missing, null);
   if (navigator.share) {
     navigator.share({ title: 'Mis figuritas faltantes', text });
   } else {
@@ -3261,10 +3276,7 @@ function shareRepes() {
   if (!repes.length) { showToast('No tenés repetidas aún'); return; }
   const totalRepes = repes.reduce((a,s) => a + (collection[s.code].count - 1), 0);
   const text = `Tengo ${totalRepes} repetidas del álbum Mundial 2026:\n` +
-    repes.map(s => {
-      const cnt = collection[s.code].count - 1;
-      return `${s.code}${cnt > 1 ? ` ×${cnt}` : ''}`;
-    }).join('\n');
+    groupedShareText(repes, s => { const c = collection[s.code].count - 1; return c > 1 ? ` ×${c}` : ''; });
   if (navigator.share) {
     navigator.share({ title: 'Mis figuritas repetidas', text });
   } else {
@@ -3278,16 +3290,14 @@ function shareCombined() {
   const repes = allStickers.filter(s => (collection[s.code]?.count||0) > 1);
   let text = `Mi álbum Mundial 2026 — ${currentUser || 'Sin usuario'}\n`;
   if (missing.length) {
-    text += `\nMe faltan ${missing.length} figuritas:\n` + missing.map(s => s.code).join('\n');
+    text += `\nMe faltan ${missing.length} figuritas:\n` + groupedShareText(missing, null);
   } else {
     text += '\n¡No me falta ninguna figurita!';
   }
   if (repes.length) {
     const totalRepes = repes.reduce((a,s) => a + (collection[s.code].count - 1), 0);
-    text += `\n\nTengo ${totalRepes} repetidas:\n` + repes.map(s => {
-      const cnt = collection[s.code].count - 1;
-      return `${s.code}${cnt > 1 ? ` ×${cnt}` : ''}`;
-    }).join('\n');
+    text += `\n\nTengo ${totalRepes} repetidas:\n` +
+      groupedShareText(repes, s => { const c = collection[s.code].count - 1; return c > 1 ? ` ×${c}` : ''; });
   }
   if (navigator.share) {
     navigator.share({ title: 'Mi álbum Mundial 2026', text });
@@ -3383,15 +3393,13 @@ function shareMatchResult() {
   if (!iCanGive && !theyCanGive) return;
   let text = `Match de intercambio — Mundial 2026\n`;
   if (iCanGive?.length) {
-    text += `\nTe puedo dar (${iCanGive.length}):\n` + iCanGive.map(s => {
-      const cnt = collection[s.code].count - 1;
-      return `${s.code}${cnt > 1 ? ` ×${cnt}` : ''}`;
-    }).join('\n');
+    text += `\nTe puedo dar (${iCanGive.length}):\n` +
+      groupedShareText(iCanGive, s => { const c = collection[s.code].count - 1; return c > 1 ? ` ×${c}` : ''; });
   } else {
     text += '\nNo tengo repetidas que te falten.';
   }
   if (theyCanGive?.length) {
-    text += `\n\nMe podés dar (${theyCanGive.length}):\n` + theyCanGive.map(s => s.code).join('\n');
+    text += `\n\nMe podés dar (${theyCanGive.length}):\n` + groupedShareText(theyCanGive, null);
   } else {
     text += '\nNo tenés repetidas que me falten.';
   }
