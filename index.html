@@ -3247,7 +3247,7 @@ function shareMissing() {
   const missing = allStickers.filter(s => !collection[s.code]?.owned);
   if (!missing.length) { showToast('¡No te falta ninguna!'); return; }
   const text = `Me faltan ${missing.length} figuritas del álbum Mundial 2026:\n` +
-    missing.map(s => `${s.code} - ${s.name}`).join('\n');
+    missing.map(s => s.code).join('\n');
   if (navigator.share) {
     navigator.share({ title: 'Mis figuritas faltantes', text });
   } else {
@@ -3263,7 +3263,7 @@ function shareRepes() {
   const text = `Tengo ${totalRepes} repetidas del álbum Mundial 2026:\n` +
     repes.map(s => {
       const cnt = collection[s.code].count - 1;
-      return `${s.code} - ${s.name}${cnt > 1 ? ` (×${cnt})` : ''}`;
+      return `${s.code}${cnt > 1 ? ` ×${cnt}` : ''}`;
     }).join('\n');
   if (navigator.share) {
     navigator.share({ title: 'Mis figuritas repetidas', text });
@@ -3278,7 +3278,7 @@ function shareCombined() {
   const repes = allStickers.filter(s => (collection[s.code]?.count||0) > 1);
   let text = `Mi álbum Mundial 2026 — ${currentUser || 'Sin usuario'}\n`;
   if (missing.length) {
-    text += `\nMe faltan ${missing.length} figuritas:\n` + missing.map(s => `${s.code} - ${s.name}`).join('\n');
+    text += `\nMe faltan ${missing.length} figuritas:\n` + missing.map(s => s.code).join('\n');
   } else {
     text += '\n¡No me falta ninguna figurita!';
   }
@@ -3286,7 +3286,7 @@ function shareCombined() {
     const totalRepes = repes.reduce((a,s) => a + (collection[s.code].count - 1), 0);
     text += `\n\nTengo ${totalRepes} repetidas:\n` + repes.map(s => {
       const cnt = collection[s.code].count - 1;
-      return `${s.code} - ${s.name}${cnt > 1 ? ` (×${cnt})` : ''}`;
+      return `${s.code}${cnt > 1 ? ` ×${cnt}` : ''}`;
     }).join('\n');
   }
   if (navigator.share) {
@@ -3385,13 +3385,13 @@ function shareMatchResult() {
   if (iCanGive?.length) {
     text += `\nTe puedo dar (${iCanGive.length}):\n` + iCanGive.map(s => {
       const cnt = collection[s.code].count - 1;
-      return `${s.code} - ${s.name}${cnt > 1 ? ` (×${cnt})` : ''}`;
+      return `${s.code}${cnt > 1 ? ` ×${cnt}` : ''}`;
     }).join('\n');
   } else {
     text += '\nNo tengo repetidas que te falten.';
   }
   if (theyCanGive?.length) {
-    text += `\n\nMe podés dar (${theyCanGive.length}):\n` + theyCanGive.map(s => `${s.code} - ${s.name}`).join('\n');
+    text += `\n\nMe podés dar (${theyCanGive.length}):\n` + theyCanGive.map(s => s.code).join('\n');
   } else {
     text += '\nNo tenés repetidas que me falten.';
   }
