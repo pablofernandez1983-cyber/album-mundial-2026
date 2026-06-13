@@ -878,6 +878,7 @@
 <div class="panel" id="panel-coleccion">
   <input type="text" class="search-bar" placeholder="🔍 País (ARG, Brasil...) o jugador" id="search-input" oninput="renderCollection()">
   <button class="share-btn" onclick="shareCombined()">📤 Compartir faltantes + repes</button>
+  <button class="share-btn" style="border-color:var(--blue);color:var(--blue);" onclick="showMatchModal()">🔄 Match de intercambio</button>
   <div style="display:flex;gap:8px;margin-bottom:10px;">
     <button class="share-btn" style="margin-bottom:0;flex:1;" onclick="printCombined(false)">🖨️ Reporte completo</button>
     <button class="share-btn" style="margin-bottom:0;flex:1;" onclick="printCombined(true)">📥 PDF completo</button>
@@ -1005,6 +1006,18 @@
   <div class="loading-text">Analizando con IA...</div>
 </div>
 
+
+<!-- MATCH MODAL -->
+<div class="modal-overlay" id="match-modal" onclick="if(event.target===this)closeMatchModal()">
+  <div class="modal" style="max-height:82vh;overflow-y:auto;display:flex;flex-direction:column;gap:0;">
+    <div class="modal-title">🔄 Match de intercambio</div>
+    <div class="modal-desc">Pegá la lista de tu colega (la que genera el botón 📤 Compartir de su álbum). Se detectan automáticamente sus faltantes y repetidas.</div>
+    <textarea id="match-input" class="modal-input" rows="7" style="resize:vertical;font-size:12px;line-height:1.5;font-family:monospace;" placeholder="Mi álbum Mundial 2026 — Nombre&#10;&#10;Me faltan X figuritas:&#10;ARG1 - Lionel Messi&#10;BRA5 - Vini Jr.&#10;...&#10;&#10;Tengo X repetidas:&#10;MEX3 - Jugador (×2)&#10;..."></textarea>
+    <button class="btn btn-gold" onclick="calcMatch()" style="margin-top:10px;">🔍 Calcular match</button>
+    <div id="match-result" style="display:none;margin-top:14px;"></div>
+    <button class="btn btn-outline" onclick="closeMatchModal()" style="margin-top:8px;">Cerrar</button>
+  </div>
+</div>
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
@@ -3280,6 +3293,105 @@ function shareCombined() {
     navigator.share({ title: 'Mi álbum Mundial 2026', text });
   } else {
     navigator.clipboard.writeText(text).then(() => showToast('📋 Lista copiada al portapapeles'));
+  }
+}
+
+// ═══════════════════════════════════════════
+// MATCH DE INTERCAMBIO
+// ═══════════════════════════════════════════
+function showMatchModal() {
+  document.getElementById('match-input').value = '';
+  document.getElementById('match-result').style.display = 'none';
+  document.getElementById('match-modal').classList.add('show');
+}
+
+function closeMatchModal() {
+  document.getElementById('match-modal').classList.remove('show');
+}
+
+function parseOtherPerson(text) {
+  const allStickers = getAllStickers();
+  const allCodes = new Set(allStickers.map(s => s.code));
+  let mode = 'faltan';
+  const theirFaltan = new Set();
+  const theirRepes = new Set();
+  for (const line of text.split('\n')) {
+    const lower = line.toLowerCase();
+    if (lower.includes('falt') || lower.includes('necesit')) { mode = 'faltan'; continue; }
+    if (lower.includes('repet') || lower.includes('repes') || (lower.includes('tengo') && lower.includes('figurit'))) { mode = 'repes'; continue; }
+    const codes = (line.match(/[A-Z]{2,7}\d+/g) || []).filter(c => allCodes.has(c));
+    codes.forEach(c => mode === 'repes' ? theirRepes.add(c) : theirFaltan.add(c));
+  }
+  return { theirFaltan, theirRepes };
+}
+
+function calcMatch() {
+  const text = document.getElementById('match-input').value.trim();
+  if (!text) { showToast('Pegá la lista de tu colega primero'); return; }
+
+  const allStickers = getAllStickers();
+  const { theirFaltan, theirRepes } = parseOtherPerson(text);
+
+  const iCanGive = allStickers.filter(s => (collection[s.code]?.count||0) > 1 && theirFaltan.has(s.code));
+  const theyCanGive = allStickers.filter(s => !collection[s.code]?.owned && theirRepes.has(s.code));
+
+  const resultEl = document.getElementById('match-result');
+  resultEl.style.display = 'block';
+
+  if (!iCanGive.length && !theyCanGive.length) {
+    resultEl.innerHTML = `<div style="text-align:center;padding:20px 10px;color:var(--muted);">
+      <div style="font-size:36px;margin-bottom:8px;">🤷</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;letter-spacing:1px;">Sin figuritas para intercambiar</div>
+      ${!theirFaltan.size && !theirRepes.size ? '<div style="font-size:12px;margin-top:6px;opacity:.7;">No se detectaron figuritas en el texto</div>' : ''}
+    </div>`;
+    return;
+  }
+
+  function chipList(stickers, showCopies) {
+    if (!stickers.length) return '<span style="color:var(--muted);font-size:13px;">Ninguna</span>';
+    return stickers.map(s => {
+      const copies = showCopies ? (collection[s.code].count - 1) : 0;
+      const badge = copies > 1 ? `<sup style="color:var(--blue);font-size:9px;margin-left:1px;">×${copies}</sup>` : '';
+      return `<span title="${s.name}" style="display:inline-flex;align-items:baseline;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:4px 9px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;margin:3px 3px 0 0;">${s.code}${badge}</span>`;
+    }).join('');
+  }
+
+  resultEl.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:14px;">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:2px;color:var(--green);text-transform:uppercase;margin-bottom:6px;">
+      📤 Vos le podés dar · ${iCanGive.length} figurita${iCanGive.length !== 1 ? 's' : ''}
+    </div>
+    <div style="line-height:1;">${chipList(iCanGive, true)}</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:2px;color:var(--blue);text-transform:uppercase;margin:14px 0 6px;">
+      📥 Te puede dar · ${theyCanGive.length} figurita${theyCanGive.length !== 1 ? 's' : ''}
+    </div>
+    <div style="line-height:1;">${chipList(theyCanGive, false)}</div>
+    <button class="btn btn-outline" onclick="shareMatchResult()" style="margin-top:14px;color:var(--gold);border-color:var(--gold2);">📤 Compartir resultado</button>
+  </div>`;
+
+  window._matchData = { iCanGive, theyCanGive };
+}
+
+function shareMatchResult() {
+  const { iCanGive, theyCanGive } = window._matchData || {};
+  if (!iCanGive && !theyCanGive) return;
+  let text = `Match de intercambio — Mundial 2026\n`;
+  if (iCanGive?.length) {
+    text += `\nTe puedo dar (${iCanGive.length}):\n` + iCanGive.map(s => {
+      const cnt = collection[s.code].count - 1;
+      return `${s.code} - ${s.name}${cnt > 1 ? ` (×${cnt})` : ''}`;
+    }).join('\n');
+  } else {
+    text += '\nNo tengo repetidas que te falten.';
+  }
+  if (theyCanGive?.length) {
+    text += `\n\nMe podés dar (${theyCanGive.length}):\n` + theyCanGive.map(s => `${s.code} - ${s.name}`).join('\n');
+  } else {
+    text += '\nNo tenés repetidas que me falten.';
+  }
+  if (navigator.share) {
+    navigator.share({ title: 'Match de intercambio', text });
+  } else {
+    navigator.clipboard.writeText(text).then(() => showToast('📋 Resultado copiado'));
   }
 }
 
