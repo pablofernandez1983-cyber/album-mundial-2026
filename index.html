@@ -4061,7 +4061,7 @@ function buildRepesBlocks() {
     const nums = repes.map(s => {
       const cnt = collection[s.code].count;
       const num = s.code.replace(k,'');
-      return cnt > 2 ? `${num}×${cnt-1}` : num;
+      return cnt > 2 ? `${num}<sup style="font-size:0.72em;line-height:0;">×${cnt-1}</sup>` : num;
     }).join(' ');
     blocks += `<div class="tb"><span class="tf">${FLAGS[k]||''}</span><span class="tn">${label}:</span><span class="tnums">${nums}</span></div>`;
   });
@@ -4075,7 +4075,7 @@ function buildRepesBlocks() {
     const nums = repes.map(s => {
       const cnt = collection[s.code].count;
       const num = s.code.replace(prefix,'');
-      return cnt > 2 ? `${num}×${cnt-1}` : num;
+      return cnt > 2 ? `${num}<sup style="font-size:0.72em;line-height:0;">×${cnt-1}</sup>` : num;
     }).join(' ');
     blocks += `<div class="gh" style="background:${gc}">${lbl}</div><div class="tb"><span class="tnums">${nums}</span></div>`;
   });
@@ -4164,7 +4164,7 @@ function printRepes(download=false) {
       .map(s => {
         const cnt = collection[s.code].count;
         const num = s.code.replace(prefix||key,'');
-        return cnt > 2 ? `${num}×${cnt-1}` : num;
+        return cnt > 2 ? `${num}<sup style="font-size:0.72em;line-height:0;">×${cnt-1}</sup>` : num;
       });
   }
 
