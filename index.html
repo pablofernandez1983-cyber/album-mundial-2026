@@ -3317,8 +3317,15 @@ function parseOtherPerson(text) {
   const theirRepes = new Set();
   for (const line of text.split('\n')) {
     const lower = line.toLowerCase();
-    if (lower.includes('falt') || lower.includes('necesit')) { mode = 'faltan'; continue; }
-    if (lower.includes('repet') || lower.includes('repes') || (lower.includes('tengo') && lower.includes('figurit'))) { mode = 'repes'; continue; }
+    // Actualizar modo según palabras clave (sin saltear la línea, por si tiene códigos también)
+    if (lower.includes('falt') || lower.includes('necesit') || lower.includes('busco') || lower.includes('quiero')) {
+      mode = 'faltan';
+    } else if (lower.includes('repet') || lower.includes('repes') || lower.includes('sobra') ||
+               lower.includes('doble') || lower.includes('duplic') || lower.includes('cambio') ||
+               lower.includes('intercambi') || lower.includes('para dar') || lower.includes('tengo de más') ||
+               (lower.includes('tengo') && lower.includes('figurit'))) {
+      mode = 'repes';
+    }
     const codes = (line.match(/[A-Z]{2,7}\d+/g) || []).filter(c => allCodes.has(c));
     codes.forEach(c => mode === 'repes' ? theirRepes.add(c) : theirFaltan.add(c));
   }
