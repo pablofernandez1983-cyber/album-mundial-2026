@@ -3388,6 +3388,21 @@ function parseOtherPerson(text) {
       }
     }
 
+    // Formato "TEAM n n n" — sin dos puntos, números separados por espacios/comas
+    // Ej: "FWC 12 17", "QAT 8", "SCO 13"
+    const spaceMatch = line.match(/^([A-Z]{2,7})\s+([\d\s,]+)$/);
+    if (spaceMatch) {
+      const team = spaceMatch[1];
+      const nums = spaceMatch[2].match(/\d+/g) || [];
+      for (const n of nums) {
+        const opts = [team + n, team + parseInt(n, 10), n];
+        for (const opt of opts) {
+          if (allCodes.has(opt)) { target.add(opt); break; }
+        }
+      }
+      continue;
+    }
+
     // Formato concatenado clásico: ARG1, BRA5, etc.
     const codes = (line.match(/[A-Z]{2,7}\d+/g) || []).filter(c => allCodes.has(c));
     codes.forEach(c => target.add(c));
