@@ -3249,7 +3249,7 @@ function groupedShareText(stickers, cntFn) {
     const relevant = stickers.filter(s => teams.includes(s.team));
     if (!relevant.length) continue;
     const nums = relevant.map(s => {
-      const num = s.team === 'INTRO' ? s.code.replace('FWC', '') : s.code;
+      const num = s.code.replace(/^([A-Z]+)(\d)/, '$1 $2');
       const suffix = cntFn ? cntFn(s) : '';
       return num + suffix;
     });
