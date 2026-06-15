@@ -2285,6 +2285,7 @@ const ALBUM = {
 // ═══════════════════════════════════════════
 let collection = {}; // code -> {owned: bool, count: int}
 let currentFilter = 'all';
+let excludeCC = false;
 let pendingOwned = [];
 let pendingMissing = [];
 let pendingUnknown = [];
@@ -2516,8 +2517,9 @@ function setLoading(show) {
   document.getElementById('loading').classList.toggle('show', show);
 }
 function updateHeader() {
-  const owned = ownedCount();
-  const total = totalStickers();
+  const allS = getAllStickers().filter(s => !excludeCC || s.team !== 'CC');
+  const owned = allS.filter(s => collection[s.code]?.owned).length;
+  const total = allS.length;
   const pct = total ? Math.round(owned/total*100) : 0;
   document.getElementById('header-stats').textContent = `${owned}/${total} · ${pct}%`;
   document.getElementById('progress-bar').style.width = pct + '%';
@@ -2852,9 +2854,9 @@ function renderCollection() {
     return s;
   }
 
-  // FWC 1-8 (Introducción) al inicio
-  const fwc1_8 = ALBUM['INTRO'].stickers.filter(s => parseInt(s.code.replace('FWC','')) <= 8);
-  html += renderSection('team-INTRO', 'Introducción', fwc1_8, applyFilters(fwc1_8, 'Introducción', 'INTRO'));
+  // Especiales: INTRO (FWC 1-19) + PANINI (00) juntos
+  const especialesStickers = [...ALBUM['INTRO'].stickers, ...ALBUM['PANINI'].stickers];
+  html += renderSection('team-especiales', 'Especiales', especialesStickers, applyFilters(especialesStickers, 'Especiales FWC', 'FWC'));
 
   // Equipos por grupo
   for (const teamCode of teamKeys) {
@@ -2868,16 +2870,8 @@ function renderCollection() {
     html += renderSection(`team-${teamCode}`, team.label, team.stickers, applyFilters(team.stickers, team.label, teamCode));
   }
 
-  // CC y Panini
-  for (const special of ['CC', 'PANINI']) {
-    if (!ALBUM[special]) continue;
-    const t = ALBUM[special];
-    html += renderSection(`team-${special}`, t.label, t.stickers, applyFilters(t.stickers, t.label, special));
-  }
-
-  // FWC 9-19 (Historia) al final
-  const fwc9_19 = ALBUM['INTRO'].stickers.filter(s => parseInt(s.code.replace('FWC','')) >= 9);
-  html += renderSection('team-INTRO-historia', 'Historia del Mundial', fwc9_19, applyFilters(fwc9_19, 'Historia del Mundial', 'FWC'));
+  // Coca-Cola al final
+  html += renderSection('team-CC', ALBUM['CC'].label, ALBUM['CC'].stickers, applyFilters(ALBUM['CC'].stickers, ALBUM['CC'].label, 'CC'));
 
   if (!html) {
     html = `<div class="empty-state">
@@ -3244,16 +3238,22 @@ async function downloadPdfCompact(htmlContent, filename) {
 
 function groupedShareText(stickers, cntFn) {
   const lines = [];
+  const done = new Set();
   for (const [teamCode, team] of Object.entries(ALBUM)) {
-    const relevant = stickers.filter(s => s.team === teamCode);
+    if (done.has(teamCode)) continue;
+    // INTRO y PANINI se fusionan bajo "FWC"
+    const isFWC = teamCode === 'INTRO';
+    const teams = isFWC ? ['INTRO', 'PANINI'] : [teamCode];
+    teams.forEach(t => done.add(t));
+    const label = isFWC ? 'FWC' : team.label;
+    const relevant = stickers.filter(s => teams.includes(s.team));
     if (!relevant.length) continue;
-    const prefix = teamCode === 'INTRO' ? 'FWC' : teamCode;
     const nums = relevant.map(s => {
-      const num = s.code.replace(prefix, '');
+      const num = s.team === 'INTRO' ? s.code.replace('FWC', '') : s.code;
       const suffix = cntFn ? cntFn(s) : '';
       return num + suffix;
     });
-    lines.push(`${team.label}: ${nums.join(', ')}`);
+    lines.push(`${label}: ${nums.join(', ')}`);
   }
   return lines.join('\n');
 }
@@ -3538,15 +3538,24 @@ function shareMatchResult() {
 // ═══════════════════════════════════════════
 // STATS
 // ═══════════════════════════════════════════
+function toggleExcludeCC() {
+  excludeCC = !excludeCC;
+  updateHeader();
+  renderStats();
+}
+
 function renderStats() {
   const container = document.getElementById('stats-container');
-  const total = totalStickers();
-  const owned = ownedCount();
+  const allS = getAllStickers().filter(s => !excludeCC || s.team !== 'CC');
+  const total = allS.length;
+  const owned = allS.filter(s => collection[s.code]?.owned).length;
   const missing = total - owned;
   const pct = total ? Math.round(owned/total*100) : 0;
-  const allS = getAllStickers();
   const dups = allS.filter(s => (collection[s.code]?.count || 0) > 1).length;
-  const totalRepes = Object.values(collection).reduce((a,v) => a + (v.owned && (v.count||1) > 1 ? (v.count-1) : 0), 0);
+  const totalRepes = allS.reduce((a, s) => {
+    const v = collection[s.code];
+    return a + (v?.owned && (v.count||1) > 1 ? (v.count-1) : 0);
+  }, 0);
 
   const SPECIALS = ['INTRO','CC','PANINI'];
   const teamKeys = Object.keys(ALBUM).filter(k => !SPECIALS.includes(k));
@@ -3643,6 +3652,9 @@ function renderStats() {
   }).join('');
 
   let html = `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+      <button onclick="toggleExcludeCC()" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:1px;padding:4px 12px;border-radius:20px;cursor:pointer;border:1px solid ${excludeCC ? 'var(--red)' : 'var(--border)'};background:${excludeCC ? 'rgba(231,76,60,0.12)' : 'transparent'};color:${excludeCC ? 'var(--red)' : 'var(--muted)'};">🥤 ${excludeCC ? 'SIN CC' : 'CON CC'}</button>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
       <div class="stat-card" style="margin-bottom:0;padding:12px 10px;">
         <div class="stat-label" style="font-size:10px">Tengo</div>
