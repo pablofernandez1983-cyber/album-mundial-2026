@@ -3248,12 +3248,14 @@ function groupedShareText(stickers, cntFn) {
     const label = isFWC ? 'FWC' : team.label;
     const relevant = stickers.filter(s => teams.includes(s.team));
     if (!relevant.length) continue;
+    const code = isFWC ? 'FWC' : teamCode;
     const nums = relevant.map(s => {
-      const num = s.code.replace(/^([A-Z]+)(\d)/, '$1 $2');
-      const suffix = cntFn ? cntFn(s) : '';
-      return num + suffix;
+      const n = s.team === 'INTRO' ? s.code.replace('FWC','') :
+                s.team === 'PANINI' ? s.code :
+                s.code.replace(teamCode,'');
+      return n + (cntFn ? cntFn(s) : '');
     });
-    lines.push(`${label}: ${nums.join(', ')}`);
+    lines.push(`${code} ${nums.join(', ')}`);
   }
   return lines.join('\n');
 }
