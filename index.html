@@ -3322,9 +3322,18 @@ function closeMatchModal() {
 function parseOtherPerson(text) {
   const allStickers = getAllStickers();
   const allCodes = new Set(allStickers.map(s => s.code));
+
+  // Mapa de label (en minúsculas, sin tildes) → stickers, para parsear el formato propio de la app
+  const labelMap = {};
+  for (const team of Object.values(ALBUM)) {
+    const key = team.label.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    labelMap[key] = team.stickers;
+  }
+
   let mode = 'faltan';
   const theirFaltan = new Set();
   const theirRepes = new Set();
+
   for (const line of text.split('\n')) {
     const lower = line.toLowerCase();
     // Actualizar modo según palabras clave (sin saltear la línea, por si tiene códigos también)
@@ -3336,8 +3345,52 @@ function parseOtherPerson(text) {
                (lower.includes('tengo') && lower.includes('figurit'))) {
       mode = 'repes';
     }
+
+    const target = mode === 'repes' ? theirRepes : theirFaltan;
+
+    // Formato "TEAM [emoji]: n, n, n" — soporta figuritas.app y similares
+    // También maneja "Argentina: 1, 3, 5" (formato propio de la app)
+    const colonIdx = line.indexOf(':');
+    if (colonIdx > 0) {
+      const afterColon = line.slice(colonIdx + 1);
+      const nums = afterColon.match(/\d+/g);
+      if (nums && nums.length) {
+        const beforeColon = line.slice(0, colonIdx).trim();
+
+        // Intento 1: prefijo en mayúsculas (ej. "MEX 🇲🇽" → "MEX")
+        const upperMatch = beforeColon.match(/^([A-Z]{2,7})/);
+        if (upperMatch) {
+          const team = upperMatch[1];
+          for (const n of nums) {
+            // Prueba team+n (con ceros), team+entero, o solo el número (para el "00" de Panini)
+            const opts = [team + n, team + parseInt(n, 10), n];
+            for (const opt of opts) {
+              if (allCodes.has(opt)) { target.add(opt); break; }
+            }
+          }
+          continue;
+        }
+
+        // Intento 2: label del equipo en español (ej. "Argentina", "México")
+        const cleanLabel = beforeColon.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        const labelStickers = labelMap[cleanLabel];
+        if (labelStickers) {
+          for (const n of nums) {
+            const numInt = parseInt(n, 10);
+            const found = labelStickers.find(s => {
+              const suffix = s.code.replace(/^[A-Z]+/, '');
+              return suffix === n || parseInt(suffix, 10) === numInt;
+            });
+            if (found && allCodes.has(found.code)) target.add(found.code);
+          }
+          continue;
+        }
+      }
+    }
+
+    // Formato concatenado clásico: ARG1, BRA5, etc.
     const codes = (line.match(/[A-Z]{2,7}\d+/g) || []).filter(c => allCodes.has(c));
-    codes.forEach(c => mode === 'repes' ? theirRepes.add(c) : theirFaltan.add(c));
+    codes.forEach(c => target.add(c));
   }
   return { theirFaltan, theirRepes };
 }
