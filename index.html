@@ -4161,7 +4161,7 @@ function renderRepes() {
   }
 
   // Specials al final
-  const specialLabels = {INTRO:'Introducción',CC:'Coca-Cola',PANINI:'Panini'};
+  const specialLabels = {INTRO:'FWC',CC:'Coca-Cola',PANINI:'Panini'};
   for (const key of specialOrderedKeys) {
     html += `<div class="group-sep"><span>${specialLabels[key]}</span></div>`;
     html += teamBlock(key);
@@ -4212,7 +4212,7 @@ function buildRepesBlocks() {
   });
 
   ['INTRO','CC','PANINI'].forEach(key => {
-    const lbl = {INTRO:'Introducción (FWC)',CC:'Coca-Cola',PANINI:'Panini'}[key];
+    const lbl = {INTRO:'FWC',CC:'Coca-Cola',PANINI:'Panini'}[key];
     const gc = {INTRO:'#555',CC:'#E8192C',PANINI:'#003DA5'}[key];
     const prefix = {INTRO:'FWC',CC:'CC',PANINI:'PANINI'}[key];
     const repes = ALBUM[key].stickers.filter(s => (collection[s.code]?.count||0) > 1);
@@ -4321,7 +4321,7 @@ function printRepes(download=false) {
     const label = ALBUM[k].label.replace('Bosnia y Herzegovina','Bosnia').replace('Estados Unidos','EE.UU.');
     items.push({ flag: FLAGS[k]||'', label, group: grp, nums });
   });
-  [['INTRO','FWC','Introducción'],['CC','CC','Coca-Cola'],['PANINI','PANINI','Panini']].forEach(([key,prefix,lbl]) => {
+  [['INTRO','FWC','FWC'],['CC','CC','Coca-Cola'],['PANINI','PANINI','Panini']].forEach(([key,prefix,lbl]) => {
     const nums = repesNums(key, prefix);
     if (nums.length) items.push({ flag: '', label: lbl, group: '·', nums });
   });
@@ -4428,7 +4428,7 @@ function printCombined(download=false) {
       const nums = missingNums(key, prefix); if (!nums.length) return '';
       return `<div class="gh" style="background:${color}">${label}</div><div class="tb"><span class="tnums">${nums.join(' ')}</span></div>`;
     }
-    b += specialBlock('INTRO','FWC','Introducción (FWC)','#555');
+    b += specialBlock('INTRO','FWC','FWC','#555');
     b += specialBlock('CC','CC','Coca-Cola (CC)','#E8192C');
     b += specialBlock('PANINI','PANINI','Panini','#003DA5');
     return b;
