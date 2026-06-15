@@ -3385,6 +3385,19 @@ function parseOtherPerson(text) {
           }
           continue;
         }
+
+        // Intento 3: código entre paréntesis — "Sudáfrica (RSA): 1, 7" o "Coca-Cola (Latam) (CC): 1, 2"
+        const parenMatches = [...beforeColon.matchAll(/\(([A-Za-z]{2,7})\)/g)];
+        if (parenMatches.length) {
+          const team = parenMatches[parenMatches.length - 1][1].toUpperCase();
+          for (const n of nums) {
+            const opts = [team + n, team + parseInt(n, 10), n];
+            for (const opt of opts) {
+              if (allCodes.has(opt)) { target.add(opt); break; }
+            }
+          }
+          continue;
+        }
       }
     }
 
