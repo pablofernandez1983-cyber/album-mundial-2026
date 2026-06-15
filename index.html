@@ -3410,12 +3410,69 @@ function parseOtherPerson(text) {
   return { theirFaltan, theirRepes };
 }
 
-function calcMatch() {
+async function parseOtherPersonWithGemini(text, allCodes) {
+  const prompt = `Sos un experto en álbumes de figuritas del Mundial 2026 (Panini FIFA World Cup 2026).
+Analizá este texto que es la lista de figuritas de una persona. Extraé dos listas:
+- "faltan": figuritas que le FALTAN (busca, necesita, quiero, me faltan, busco)
+- "repes": figuritas REPETIDAS (repite, sobran, tiene de más, para dar, intercambiar, cambio)
+
+Los códigos son: letras del equipo en mayúsculas + número. Ej: MEX3, ARG19, FWC12, QAT1, CC5.
+Normalizá cualquier formato al estándar LETRAS+número sin espacios ni emojis.
+Ejemplos de formatos posibles:
+- "MEX 🇲🇽: 3, 14" → MEX3, MEX14
+- "FWC 12 17" → FWC12, FWC17
+- "ARG1 ARG3" → ARG1, ARG3
+- "Argentina: 1, 3" → ARG1, ARG3
+- "00" o "FWC 00" → 00
+
+Respondé SOLO con JSON, sin texto extra:
+{"faltan": ["MEX3", "ARG19"], "repes": ["BRA13", "FWC12"]}
+Arrays pueden estar vacíos [].
+
+Texto a analizar:
+${text}`;
+
+  const response = await fetch(`${PROXY_URL}/gemini`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 2000, temperature: 0 }
+    })
+  });
+  const data = await response.json();
+  if (!response.ok || data.error) throw new Error('Error al consultar la IA');
+  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!raw) throw new Error('La IA no devolvió resultado');
+  const cleaned = raw.replace(/```(?:json)?\n?/g, '').trim();
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('Respuesta de IA inválida');
+  const result = JSON.parse(jsonMatch[0]);
+  return {
+    theirFaltan: new Set((result.faltan || []).filter(c => allCodes.has(c))),
+    theirRepes:  new Set((result.repes  || []).filter(c => allCodes.has(c)))
+  };
+}
+
+async function calcMatch() {
   const text = document.getElementById('match-input').value.trim();
   if (!text) { showToast('Pegá la lista de tu colega primero'); return; }
 
   const allStickers = getAllStickers();
-  const { theirFaltan, theirRepes } = parseOtherPerson(text);
+  const allCodes = new Set(allStickers.map(s => s.code));
+  let { theirFaltan, theirRepes } = parseOtherPerson(text);
+
+  // Fallback a Gemini si el parser no detectó nada
+  if (theirFaltan.size === 0 && theirRepes.size === 0 && text.trim().length > 10) {
+    setLoading(true);
+    try {
+      ({ theirFaltan, theirRepes } = await parseOtherPersonWithGemini(text, allCodes));
+    } catch(e) {
+      showToast('⚠️ ' + e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const iCanGive = allStickers.filter(s => (collection[s.code]?.count||0) > 1 && theirFaltan.has(s.code));
   const theyCanGive = allStickers.filter(s => !collection[s.code]?.owned && theirRepes.has(s.code));
