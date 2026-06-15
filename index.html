@@ -877,7 +877,10 @@
 <!-- PANEL: COLECCIÓN -->
 <div class="panel" id="panel-coleccion">
   <input type="text" class="search-bar" placeholder="🔍 País (ARG, Brasil...) o jugador" id="search-input" oninput="renderCollection()">
-  <button class="share-btn" onclick="shareCombined()">📤 Compartir faltantes + repes</button>
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+    <button class="share-btn" style="flex:1;margin-bottom:0;" onclick="shareCombined()">📤 Compartir faltantes + repes</button>
+    <button class="cc-toggle" onclick="toggleCC()" style="white-space:nowrap;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:1px;cursor:pointer;">🥤 CON CC</button>
+  </div>
   <button class="share-btn" style="border-color:var(--blue);color:var(--blue);" onclick="showMatchModal()">🔄 Match de intercambio</button>
   <div style="display:flex;gap:8px;margin-bottom:10px;">
     <button class="share-btn" style="margin-bottom:0;flex:1;" onclick="printCombined(false)">🖨️ Reporte completo</button>
@@ -894,7 +897,10 @@
 
 <!-- PANEL: FALTANTES -->
 <div class="panel" id="panel-faltantes">
-  <button class="share-btn" onclick="shareMissing()">📤 Compartir lista de faltantes</button>
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+    <button class="share-btn" style="flex:1;margin-bottom:0;" onclick="shareMissing()">📤 Compartir lista de faltantes</button>
+    <button class="cc-toggle" onclick="toggleCC()" style="white-space:nowrap;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:1px;cursor:pointer;">🥤 CON CC</button>
+  </div>
   <div style="font-size:11px;color:var(--muted);margin-bottom:4px;letter-spacing:0.5px;text-transform:uppercase;">Reporte completo (A4)</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
     <button class="share-btn" style="margin-bottom:0;" onclick="printReport(false,false)">🖨️ Imprimir</button>
@@ -958,7 +964,10 @@
   </div>
 
   <!-- ACCIONES Y LISTA -->
-  <button class="share-btn" style="margin-top:16px;" onclick="shareRepes()">📤 Compartir lista de repetidas</button>
+  <div style="display:flex;gap:8px;align-items:center;margin-top:16px;margin-bottom:10px;">
+    <button class="share-btn" style="flex:1;margin-bottom:0;" onclick="shareRepes()">📤 Compartir lista de repetidas</button>
+    <button class="cc-toggle" onclick="toggleCC()" style="white-space:nowrap;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:1px;cursor:pointer;">🥤 CON CC</button>
+  </div>
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;">
     <button class="btn btn-outline" onclick="printRepes(false)">🖨️ Imprimir</button>
     <button class="btn btn-outline" onclick="printRepes(true)">📥 PDF</button>
@@ -3261,7 +3270,7 @@ function groupedShareText(stickers, cntFn) {
 }
 
 function shareMissing() {
-  const allStickers = getAllStickers();
+  const allStickers = getAllStickers().filter(s => !excludeCC || s.team !== 'CC');
   const missing = allStickers.filter(s => !collection[s.code]?.owned);
   if (!missing.length) { showToast('¡No te falta ninguna!'); return; }
   const text = `Me faltan ${missing.length} figuritas del álbum Mundial 2026:\n` + groupedShareText(missing, null);
@@ -3273,7 +3282,7 @@ function shareMissing() {
 }
 
 function shareRepes() {
-  const allStickers = getAllStickers();
+  const allStickers = getAllStickers().filter(s => !excludeCC || s.team !== 'CC');
   const repes = allStickers.filter(s => (collection[s.code]?.count||0) > 1);
   if (!repes.length) { showToast('No tenés repetidas aún'); return; }
   const totalRepes = repes.reduce((a,s) => a + (collection[s.code].count - 1), 0);
@@ -3287,7 +3296,7 @@ function shareRepes() {
 }
 
 function shareCombined() {
-  const allStickers = getAllStickers();
+  const allStickers = getAllStickers().filter(s => !excludeCC || s.team !== 'CC');
   const missing = allStickers.filter(s => !collection[s.code]?.owned);
   const repes = allStickers.filter(s => (collection[s.code]?.count||0) > 1);
   let text = `Mi álbum Mundial 2026 — ${currentUser || 'Sin usuario'}\n`;
@@ -3553,10 +3562,17 @@ function shareMatchResult() {
 // ═══════════════════════════════════════════
 // STATS
 // ═══════════════════════════════════════════
-function toggleExcludeCC() {
+function toggleCC() {
   excludeCC = !excludeCC;
   updateHeader();
-  renderStats();
+  document.querySelectorAll('.cc-toggle').forEach(btn => {
+    btn.style.borderColor = excludeCC ? 'var(--red)' : 'var(--border)';
+    btn.style.color       = excludeCC ? 'var(--red)' : 'var(--muted)';
+    btn.style.background  = excludeCC ? 'rgba(231,76,60,0.12)' : 'transparent';
+    btn.textContent = '🥤 ' + (excludeCC ? 'SIN CC' : 'CON CC');
+  });
+  const sp = document.getElementById('panel-stats');
+  if (sp && sp.classList.contains('active')) renderStats();
 }
 
 function renderStats() {
@@ -3668,7 +3684,7 @@ function renderStats() {
 
   let html = `
     <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
-      <button onclick="toggleExcludeCC()" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:1px;padding:4px 12px;border-radius:20px;cursor:pointer;border:1px solid ${excludeCC ? 'var(--red)' : 'var(--border)'};background:${excludeCC ? 'rgba(231,76,60,0.12)' : 'transparent'};color:${excludeCC ? 'var(--red)' : 'var(--muted)'};">🥤 ${excludeCC ? 'SIN CC' : 'CON CC'}</button>
+      <button onclick="toggleCC()" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:1px;padding:4px 12px;border-radius:20px;cursor:pointer;border:1px solid ${excludeCC ? 'var(--red)' : 'var(--border)'};background:${excludeCC ? 'rgba(231,76,60,0.12)' : 'transparent'};color:${excludeCC ? 'var(--red)' : 'var(--muted)'};">🥤 ${excludeCC ? 'SIN CC' : 'CON CC'}</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
       <div class="stat-card" style="margin-bottom:0;padding:12px 10px;">
