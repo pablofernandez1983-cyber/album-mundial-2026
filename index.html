@@ -3010,7 +3010,9 @@ function printReport(sortAlpha, download=false) {
   const avgMissing = teamItems.reduce((s, t) => s + t.nums.length, 0) / Math.max(n, 1);
   const avgCharsPerRow = 14 + avgMissing * 2.5;
   const maxRowChars = teamItems.reduce((m, t) => {
-    const rowLen = (t.label || '').length + 2 + t.nums.join(', ').length;
+    const codeLen = t.key ? t.key.length + 1 : 0; // "PAR "
+    const groupLen = (t.group && t.group !== '·') ? t.group.length + 3 : 0; // " [F]"
+    const rowLen = codeLen + (t.label || '').length + groupLen + 2 + t.nums.join(' ').length;
     return Math.max(m, rowLen);
   }, 0);
   let fontPt = 9;
