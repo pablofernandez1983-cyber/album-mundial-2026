@@ -3142,11 +3142,11 @@ function printReportCompact(sortAlpha, download=false) {
 
   const n = items.filter(t => !t.header).length;
 
-  // Página completa (A4/Carta según el papel del usuario), margen 8mm → ~194×277mm útil
-  const CONTENT_W_MM = 194;
+  // Mitad del ancho de A4, página completa (sin @page size), margen 8mm → ~97×272mm útil
+  const CONTENT_W_MM = 97;
   const CONTENT_H_MM = 272;
   const NUM_COLS = 2;
-  const colWidthMm = (CONTENT_W_MM - 3) / NUM_COLS; // gap 3mm
+  const colWidthMm = (CONTENT_W_MM - 2) / NUM_COLS; // gap 2mm → ~47.5mm por col
   const teamItems = items.filter(t => !t.header);
   const avgMissing = teamItems.reduce((s, t) => s + t.nums.length, 0) / Math.max(teamItems.length, 1);
   const avgCharsPerRow = 14 + avgMissing * 2.5;
@@ -3193,7 +3193,7 @@ function printReportCompact(sortAlpha, download=false) {
     + '@page{margin:8mm}'
     + '*{box-sizing:border-box;margin:0;padding:0}'
     + 'body{font-family:\'Barlow Condensed\',Arial Narrow,sans-serif;color:#111;background:#fff;font-size:' + fontPt + 'pt;line-height:1.15}'
-    + '.cols-wrap{display:flex;gap:3mm;align-items:flex-start}'
+    + '.cols-wrap{display:flex;gap:2mm;align-items:flex-start;width:' + CONTENT_W_MM + 'mm}'
     + '.col{flex:1 1 0;min-width:0}'
     + '.tb{margin-bottom:0;line-height:1.2}'
     + '.tcode{font-weight:700;color:#888;font-size:' + grpSize + 'pt}'
@@ -3201,7 +3201,7 @@ function printReportCompact(sortAlpha, download=false) {
     + '.grp{font-weight:400;font-size:' + grpSize + 'pt;color:#888}'
     + '.tnums{color:#333;font-weight:600}'
     + '.gh{font-weight:900;font-size:' + grpSize + 'pt;text-transform:uppercase;color:#003DA5;border-bottom:0.3pt solid #003DA5;margin:2pt 0 1pt;letter-spacing:0.5px}'
-    + '@media screen{html{background:#ccc}body{width:' + CONTENT_W_MM + 'mm;margin:10mm auto;background:#fff;padding:8mm;box-shadow:0 2px 8px rgba(0,0,0,.3)}}';
+    + '@media screen{html{background:#ccc}body{width:210mm;margin:10mm auto;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3)}.cols-wrap{padding:8mm}}';
 
   const body = n > 0 ? colsHtml : '<p style="color:#888;font-size:8pt;margin:4mm 0">¡Álbum completo! 🏆</p>';
   // Wait for fonts before printing to avoid fallback-font layout
