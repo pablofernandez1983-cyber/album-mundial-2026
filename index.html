@@ -3009,9 +3009,14 @@ function printReport(sortAlpha, download=false) {
   const colWidthMm = (198 - (NUM_COLS - 1) * 3) / NUM_COLS;
   const avgMissing = teamItems.reduce((s, t) => s + t.nums.length, 0) / Math.max(n, 1);
   const avgCharsPerRow = 14 + avgMissing * 2.5;
+  const maxRowChars = teamItems.reduce((m, t) => {
+    const rowLen = (t.label || '').length + 2 + t.nums.join(', ').length;
+    return Math.max(m, rowLen);
+  }, 0);
   let fontPt = 9;
   for (let f = 9; f <= 20; f++) {
     const charsPerLine = Math.max(1, Math.floor(colWidthMm / (f * 0.353 * 0.63)));
+    if (charsPerLine < maxRowChars) break; // font too large, rows would wrap
     const linesPerRow = Math.max(1, Math.ceil(avgCharsPerRow / charsPerLine));
     if (rowsPerCol * linesPerRow * f * 0.353 * 1.35 <= 220) fontPt = f;
     else break;
