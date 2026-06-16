@@ -3143,19 +3143,25 @@ function printReportCompact(sortAlpha, download=false) {
   const n = items.filter(t => !t.header).length;
 
   // Target: A6 portrait (105×148mm), margin 3mm → usable ~99×142mm
-  // For screen preview and iframe rendering: 397px ≈ 105mm at 96dpi
-  const NUM_COLS = 3;
   const CONTENT_W_MM = 99;
   const CONTENT_H_MM = 142;
-  const colWidthMm = (CONTENT_W_MM - (NUM_COLS - 1) * 2) / NUM_COLS; // ~31.67mm
+  // Use 2 columns when few items (wider col → larger font); 3 cols for many items
+  const NUM_COLS = n <= 55 ? 2 : 3;
+  const colWidthMm = (CONTENT_W_MM - (NUM_COLS - 1) * 2) / NUM_COLS;
   const teamItems = items.filter(t => !t.header);
   const avgMissing = teamItems.reduce((s, t) => s + t.nums.length, 0) / Math.max(teamItems.length, 1);
   const avgCharsPerRow = 14 + avgMissing * 2.5;
   const rowsPerCol = Math.ceil(items.length / NUM_COLS);
-  // Barlow Condensed char width ≈ 0.5 × pt × 0.353mm; line height 1.15
+  const maxRowChars = teamItems.reduce((m, t) => {
+    const codeLen = t.key ? t.key.length + 1 : 0;
+    const groupLen = (t.group && t.group !== '·') ? t.group.length + 3 : 0;
+    const rowLen = codeLen + (t.label || '').length + groupLen + 2 + t.nums.join(' ').length;
+    return Math.max(m, rowLen);
+  }, 0);
   let fontPt = 6;
   for (let f = 6; f <= 14; f++) {
-    const charsPerLine = Math.max(1, Math.floor(colWidthMm / (f * 0.353 * 1.05)));
+    const charsPerLine = Math.max(1, Math.floor(colWidthMm / (f * 0.353 * 0.63)));
+    if (charsPerLine < maxRowChars) break;
     const linesPerRow = Math.max(1, Math.ceil(avgCharsPerRow / charsPerLine));
     if (rowsPerCol * linesPerRow * f * 0.353 * 1.15 <= CONTENT_H_MM) fontPt = f;
     else break;
