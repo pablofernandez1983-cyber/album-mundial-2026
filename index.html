@@ -3142,15 +3142,11 @@ function printReportCompact(sortAlpha, download=false) {
 
   const n = items.filter(t => !t.header).length;
 
-  // Target: A6 portrait (105×148mm), margin 3mm → usable ~99×142mm
-  const CONTENT_W_MM = 99;
-  const CONTENT_H_MM = 142;
-  // Minimum font to use; max rows that fit at that font
-  const maxRowsAt6pt = Math.floor(CONTENT_H_MM / (6 * 0.353 * 1.15)); // ≈58
-  // 1 col solo si hay muy pocos items; 2 cols para casos típicos; 3 cuando hay muchos
-  const NUM_COLS = n <= 5 ? 1 : n <= maxRowsAt6pt * 2 ? 2 : 3;
-  const colGap = NUM_COLS > 1 ? 2 : 0;
-  const colWidthMm = (CONTENT_W_MM - (NUM_COLS - 1) * colGap) / NUM_COLS;
+  // Página completa (A4/Carta según el papel del usuario), margen 8mm → ~194×277mm útil
+  const CONTENT_W_MM = 194;
+  const CONTENT_H_MM = 272;
+  const NUM_COLS = 2;
+  const colWidthMm = (CONTENT_W_MM - 3) / NUM_COLS; // gap 3mm
   const teamItems = items.filter(t => !t.header);
   const avgMissing = teamItems.reduce((s, t) => s + t.nums.length, 0) / Math.max(teamItems.length, 1);
   const avgCharsPerRow = 14 + avgMissing * 2.5;
@@ -3162,7 +3158,7 @@ function printReportCompact(sortAlpha, download=false) {
     return Math.max(m, rowLen);
   }, 0);
   let fontPt = 6;
-  for (let f = 6; f <= 28; f++) {
+  for (let f = 6; f <= 40; f++) {
     const charsPerLine = Math.max(1, Math.floor(colWidthMm / (f * 0.353 * 0.63)));
     if (charsPerLine < maxRowChars) break;
     const linesPerRow = Math.max(1, Math.ceil(avgCharsPerRow / charsPerLine));
@@ -3194,18 +3190,18 @@ function printReportCompact(sortAlpha, download=false) {
   const colsHtml = columns.map(col => '<div class="col">' + col.map(renderItem).join('') + '</div>').join('');
 
   const css = '@import url(\'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&display=swap\');'
-    + '@page{size:A6 portrait;margin:3mm}'
+    + '@page{margin:8mm}'
     + '*{box-sizing:border-box;margin:0;padding:0}'
     + 'body{font-family:\'Barlow Condensed\',Arial Narrow,sans-serif;color:#111;background:#fff;font-size:' + fontPt + 'pt;line-height:1.15}'
-    + '.cols-wrap{display:flex;gap:2mm;align-items:flex-start;width:' + CONTENT_W_MM + 'mm}'
+    + '.cols-wrap{display:flex;gap:3mm;align-items:flex-start}'
     + '.col{flex:1 1 0;min-width:0}'
-    + '.tb{margin-bottom:0;line-height:1.15}'
+    + '.tb{margin-bottom:0;line-height:1.2}'
     + '.tcode{font-weight:700;color:#888;font-size:' + grpSize + 'pt}'
     + '.tn{font-weight:700}'
     + '.grp{font-weight:400;font-size:' + grpSize + 'pt;color:#888}'
     + '.tnums{color:#333;font-weight:600}'
     + '.gh{font-weight:900;font-size:' + grpSize + 'pt;text-transform:uppercase;color:#003DA5;border-bottom:0.3pt solid #003DA5;margin:2pt 0 1pt;letter-spacing:0.5px}'
-    + '@media screen{html{background:#ccc}body{width:' + CONTENT_W_MM + 'mm;margin:5mm auto;background:#fff;padding:3mm;box-shadow:0 2px 8px rgba(0,0,0,.3)}}';
+    + '@media screen{html{background:#ccc}body{width:' + CONTENT_W_MM + 'mm;margin:10mm auto;background:#fff;padding:8mm;box-shadow:0 2px 8px rgba(0,0,0,.3)}}';
 
   const body = n > 0 ? colsHtml : '<p style="color:#888;font-size:8pt;margin:4mm 0">¡Álbum completo! 🏆</p>';
   // Wait for fonts before printing to avoid fallback-font layout
