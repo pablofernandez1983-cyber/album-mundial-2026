@@ -3147,8 +3147,8 @@ function printReportCompact(sortAlpha, download=false) {
   const CONTENT_H_MM = 142;
   // Minimum font to use; max rows that fit at that font
   const maxRowsAt6pt = Math.floor(CONTENT_H_MM / (6 * 0.353 * 1.15)); // ≈58
-  // Fewer columns = wider columns = larger font: use minimum cols that fit at 6pt
-  const NUM_COLS = n <= maxRowsAt6pt ? 1 : n <= maxRowsAt6pt * 2 ? 2 : 3;
+  // 1 col solo si hay muy pocos items; 2 cols para casos típicos; 3 cuando hay muchos
+  const NUM_COLS = n <= 5 ? 1 : n <= maxRowsAt6pt * 2 ? 2 : 3;
   const colGap = NUM_COLS > 1 ? 2 : 0;
   const colWidthMm = (CONTENT_W_MM - (NUM_COLS - 1) * colGap) / NUM_COLS;
   const teamItems = items.filter(t => !t.header);
