@@ -2977,7 +2977,7 @@ function printReport(sortAlpha, download=false) {
       .map(k => ({ key: k, label: ALBUM[k].label.replace('Bosnia y Herzegovina','Bosnia').replace('Estados Unidos','EE.UU.'), group: groupOf[k], nums: missingNums(k) }))
       .filter(t => t.nums.length > 0)
       .sort((a, b) => a.label.localeCompare(b.label, 'es'));
-    [['INTRO','FWC','Intro','·'],['CC','CC','Coca-Cola','·'],['PANINI','PANINI','Panini','·']].forEach(([key,prefix,lbl,grp]) => {
+    [['INTRO','FWC','FWC','·'],['CC','CC','Coca-Cola','·'],['PANINI','PANINI','Panini','·']].forEach(([key,prefix,lbl,grp]) => {
       const nums = missingNums(key, prefix);
       if (nums.length) items.push({ key: '', label: lbl, group: grp, nums });
     });
@@ -2990,7 +2990,7 @@ function printReport(sortAlpha, download=false) {
       const grp = GROUPS[Math.floor(i/4)];
       items.push({ key: k, label: ALBUM[k].label.replace('Bosnia y Herzegovina','Bosnia').replace('Estados Unidos','EE.UU.'), group: grp, nums });
     });
-    [['INTRO','FWC','Intro'],['CC','CC','Coca-Cola'],['PANINI','PANINI','Panini']].forEach(([key,prefix,lbl]) => {
+    [['INTRO','FWC','FWC'],['CC','CC','Coca-Cola'],['PANINI','PANINI','Panini']].forEach(([key,prefix,lbl]) => {
       const nums = missingNums(key, prefix);
       if (nums.length) items.push({ key: lbl, label: lbl, group: '·', nums });
     });
@@ -3122,7 +3122,7 @@ function printReportCompact(sortAlpha, download=false) {
       .map(k => ({ key: k, label: ALBUM[k].label.replace('Bosnia y Herzegovina','Bosnia').replace('Estados Unidos','EE.UU.'), group: groupOf[k], nums: missingNums(k) }))
       .filter(t => t.nums.length > 0)
       .sort((a, b) => a.label.localeCompare(b.label, 'es'));
-    [['INTRO','FWC','Intro','·'],['CC','CC','Coca-Cola','·'],['PANINI','PANINI','Panini','·']].forEach(([key,prefix,lbl,grp]) => {
+    [['INTRO','FWC','FWC','·'],['CC','CC','Coca-Cola','·'],['PANINI','PANINI','Panini','·']].forEach(([key,prefix,lbl,grp]) => {
       const nums = missingNums(key, prefix);
       if (nums.length) items.push({ key: '', label: lbl, group: grp, nums });
     });
@@ -3134,7 +3134,7 @@ function printReportCompact(sortAlpha, download=false) {
       const grp = GROUPS[Math.floor(i/4)];
       items.push({ key: k, label: ALBUM[k].label.replace('Bosnia y Herzegovina','Bosnia').replace('Estados Unidos','EE.UU.'), group: grp, nums });
     });
-    [['INTRO','FWC','Intro'],['CC','CC','Coca-Cola'],['PANINI','PANINI','Panini']].forEach(([key,prefix,lbl]) => {
+    [['INTRO','FWC','FWC'],['CC','CC','Coca-Cola'],['PANINI','PANINI','Panini']].forEach(([key,prefix,lbl]) => {
       const nums = missingNums(key, prefix);
       if (nums.length) items.push({ key: lbl, label: lbl, group: '·', nums });
     });
