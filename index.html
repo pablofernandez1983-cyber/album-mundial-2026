@@ -3145,9 +3145,12 @@ function printReportCompact(sortAlpha, download=false) {
   // Target: A6 portrait (105×148mm), margin 3mm → usable ~99×142mm
   const CONTENT_W_MM = 99;
   const CONTENT_H_MM = 142;
-  // Use 2 columns when few items (wider col → larger font); 3 cols for many items
-  const NUM_COLS = n <= 55 ? 2 : 3;
-  const colWidthMm = (CONTENT_W_MM - (NUM_COLS - 1) * 2) / NUM_COLS;
+  // Minimum font to use; max rows that fit at that font
+  const maxRowsAt6pt = Math.floor(CONTENT_H_MM / (6 * 0.353 * 1.15)); // ≈58
+  // Fewer columns = wider columns = larger font: use minimum cols that fit at 6pt
+  const NUM_COLS = n <= maxRowsAt6pt ? 1 : n <= maxRowsAt6pt * 2 ? 2 : 3;
+  const colGap = NUM_COLS > 1 ? 2 : 0;
+  const colWidthMm = (CONTENT_W_MM - (NUM_COLS - 1) * colGap) / NUM_COLS;
   const teamItems = items.filter(t => !t.header);
   const avgMissing = teamItems.reduce((s, t) => s + t.nums.length, 0) / Math.max(teamItems.length, 1);
   const avgCharsPerRow = 14 + avgMissing * 2.5;
@@ -3159,7 +3162,7 @@ function printReportCompact(sortAlpha, download=false) {
     return Math.max(m, rowLen);
   }, 0);
   let fontPt = 6;
-  for (let f = 6; f <= 14; f++) {
+  for (let f = 6; f <= 28; f++) {
     const charsPerLine = Math.max(1, Math.floor(colWidthMm / (f * 0.353 * 0.63)));
     if (charsPerLine < maxRowChars) break;
     const linesPerRow = Math.max(1, Math.ceil(avgCharsPerRow / charsPerLine));
