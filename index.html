@@ -3190,10 +3190,10 @@ function printReportCompact(sortAlpha, download=false) {
   const colsHtml = columns.map(col => '<div class="col">' + col.map(renderItem).join('') + '</div>').join('');
 
   const css = '@import url(\'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&display=swap\');'
-    + '@page{margin:8mm}'
+    + '@page{size:A4 portrait;margin:8mm}'
     + '*{box-sizing:border-box;margin:0;padding:0}'
     + 'body{font-family:\'Barlow Condensed\',Arial Narrow,sans-serif;color:#111;background:#fff;font-size:' + fontPt + 'pt;line-height:1.15}'
-    + '.cols-wrap{display:flex;gap:2mm;align-items:flex-start;width:' + CONTENT_W_MM + 'mm}'
+    + '.cols-wrap{display:flex;gap:3mm;align-items:flex-start;width:100%}'
     + '.col{flex:1 1 0;min-width:0}'
     + '.tb{margin-bottom:0;line-height:1.2}'
     + '.tcode{font-weight:700;color:#888;font-size:' + grpSize + 'pt}'
@@ -3207,7 +3207,7 @@ function printReportCompact(sortAlpha, download=false) {
   // Wait for fonts before printing to avoid fallback-font layout
   const printScript = download ? '' : '<script>window.onload=async()=>{try{await document.fonts.ready;}catch(e){}window.print();}<\/script>';
 
-  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Faltantes Comprimido</title>'
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Faltantes Comprimido</title>'
     + '<style>' + css + '</style></head><body>'
     + '<div class="cols-wrap">' + body + '</div>'
     + printScript
