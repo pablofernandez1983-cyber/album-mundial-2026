@@ -3142,9 +3142,9 @@ function printReportCompact(sortAlpha, download=false) {
 
   const n = items.filter(t => !t.header).length;
 
-  // A5 = mitad exacta de A4. El browser respeta @page{size:A5} en cualquier dispositivo.
-  const CONTENT_W_MM = 132; // 148mm - 2*8mm márgenes
-  const CONTENT_H_MM = 194; // 210mm - 2*8mm márgenes
+  // Dimensiones A5: mitad de A4. El wrapper se fija a A5 en página A4, ocupando la mitad superior.
+  const CONTENT_W_MM = 132; // A5 width - 2*8mm márgenes
+  const CONTENT_H_MM = 194; // A5 height - 2*8mm márgenes
   const NUM_COLS = 2;
   const colWidthMm = (CONTENT_W_MM - 3) / NUM_COLS;
   const teamItems = items.filter(t => !t.header);
@@ -3190,10 +3190,10 @@ function printReportCompact(sortAlpha, download=false) {
   const colsHtml = columns.map(col => '<div class="col">' + col.map(renderItem).join('') + '</div>').join('');
 
   const css = '@import url(\'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&display=swap\');'
-    + '@page{size:A5 portrait;margin:8mm}'
+    + '@page{size:A4 portrait;margin:8mm}'
     + '*{box-sizing:border-box;margin:0;padding:0}'
     + 'body{font-family:\'Barlow Condensed\',Arial Narrow,sans-serif;color:#111;background:#fff;font-size:' + fontPt + 'pt;line-height:1.15}'
-    + '.cols-wrap{display:flex;gap:3mm;align-items:flex-start;justify-content:center}'
+    + '.cols-wrap{display:flex;gap:3mm;align-items:flex-start;width:' + CONTENT_W_MM + 'mm;max-height:' + CONTENT_H_MM + 'mm;overflow:hidden}'
     + '.col{width:' + colWidthMm.toFixed(1) + 'mm;flex:0 0 ' + colWidthMm.toFixed(1) + 'mm;min-width:0}'
     + '.tb{margin-bottom:0;line-height:1.2}'
     + '.tcode{font-weight:700;color:#888;font-size:' + grpSize + 'pt}'
@@ -3201,7 +3201,7 @@ function printReportCompact(sortAlpha, download=false) {
     + '.grp{font-weight:400;font-size:' + grpSize + 'pt;color:#888}'
     + '.tnums{color:#333;font-weight:600}'
     + '.gh{font-weight:900;font-size:' + grpSize + 'pt;text-transform:uppercase;color:#003DA5;border-bottom:0.3pt solid #003DA5;margin:2pt 0 1pt;letter-spacing:0.5px}'
-    + '@media screen{html{background:#ccc}body{width:148mm;margin:10mm auto;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3)}.cols-wrap{padding:8mm}}';
+    + '@media screen{html{background:#ccc}body{width:210mm;margin:10mm auto;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3);padding:8mm}}';
 
   const body = n > 0 ? colsHtml : '<p style="color:#888;font-size:8pt;margin:4mm 0">¡Álbum completo! 🏆</p>';
   // Wait for fonts before printing to avoid fallback-font layout
