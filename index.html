@@ -3142,19 +3142,19 @@ function printReportCompact(sortAlpha, download=false) {
 
   const n = items.filter(t => !t.header).length;
 
-  // Mitad del ancho de A4, página completa (sin @page size), margen 8mm → ~97×272mm útil
-  const CONTENT_W_MM = 97;
+  // Página completa, 2 columnas, sin tags de grupo → filas más cortas → font más grande
+  const CONTENT_W_MM = 190;
   const CONTENT_H_MM = 272;
   const NUM_COLS = 2;
-  const colWidthMm = (CONTENT_W_MM - 2) / NUM_COLS; // gap 2mm → ~47.5mm por col
+  const colWidthMm = (CONTENT_W_MM - 3) / NUM_COLS;
   const teamItems = items.filter(t => !t.header);
   const avgMissing = teamItems.reduce((s, t) => s + t.nums.length, 0) / Math.max(teamItems.length, 1);
-  const avgCharsPerRow = 14 + avgMissing * 2.5;
+  const avgCharsPerRow = 12 + avgMissing * 2.5;
   const rowsPerCol = Math.ceil(items.length / NUM_COLS);
+  // Sin grupo en compact: maxRowChars excluye groupLen
   const maxRowChars = teamItems.reduce((m, t) => {
     const codeLen = t.key ? t.key.length + 1 : 0;
-    const groupLen = (t.group && t.group !== '·') ? t.group.length + 3 : 0;
-    const rowLen = codeLen + (t.label || '').length + groupLen + 2 + t.nums.join(' ').length;
+    const rowLen = codeLen + (t.label || '').length + 2 + t.nums.join(' ').length;
     return Math.max(m, rowLen);
   }, 0);
   let fontPt = 6;
@@ -3182,9 +3182,9 @@ function printReportCompact(sortAlpha, download=false) {
   const grpSize = Math.max(5, Math.round(fontPt * 0.80));
   function renderItem(item) {
     if (item.header) return '<div class="gh">' + item.label + '</div>';
-    const grpTag = item.group && item.group !== '·' ? ' <span class="grp">[' + item.group + ']</span>' : '';
+    // Compact: sin tag de grupo para ahorrar espacio y permitir font más grande
     const codeTag = item.key ? '<span class="tcode">' + item.key + '</span> ' : '';
-    return '<div class="tb">' + codeTag + '<span class="tn">' + item.label + grpTag + ':</span> <span class="tnums">' + item.nums.join(' ') + '</span></div>';
+    return '<div class="tb">' + codeTag + '<span class="tn">' + item.label + ':</span> <span class="tnums">' + item.nums.join(' ') + '</span></div>';
   }
 
   const colsHtml = columns.map(col => '<div class="col">' + col.map(renderItem).join('') + '</div>').join('');
