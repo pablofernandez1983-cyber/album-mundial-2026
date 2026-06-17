@@ -3158,7 +3158,8 @@ function printReportCompact(sortAlpha, download=false) {
     return Math.max(m, rowLen);
   }, 0);
   let fontPt = 6;
-  for (let f = 6; f <= 40; f++) {
+  const MAX_FONT = 16; // cap: legible sin parecer explotado en hoja A4
+  for (let f = 6; f <= MAX_FONT; f++) {
     const charsPerLine = Math.max(1, Math.floor(colWidthMm / (f * 0.353 * 0.57)));
     if (charsPerLine < maxRowChars) break;
     const linesPerRow = Math.max(1, Math.ceil(avgCharsPerRow / charsPerLine));
